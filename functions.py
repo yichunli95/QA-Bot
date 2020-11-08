@@ -84,6 +84,7 @@ if __name__ == '__main__':
 
     for sent in sentences:
         sent = "In 2006, Viz released ten DVDs based around individual Pokémon in celebration of Pokémon's 10th anniversary in the United States. "
+        # sent = "Seated in Mission Control, Chris Kraft neared the end of a tedious Friday afternoon as he monitored a seemingly interminable ground test of the Apollo 1 spacecraft."
         token = nlp(sent)
         print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
@@ -98,14 +99,49 @@ if __name__ == '__main__':
         # print("svo:", result)
         print("Questions:")
         for entity in result:
-            subject, verb, object = entity
+            subject, subject_tag, negation, verb, object = entity
             # generate question about verb
-            if verb in why_dict:
-                print("Why did " + subject + " " + verb + " " + object + "?")
-            if verb in when_dict:
-                print("When did " + subject + " " + verb + " " + object + "?")
-            if verb in where_dict:
-                print("Where did " + subject + " " + verb + " " + object + "?")
+            question_tense1 = ''
+            what_tense = ''
+            tense = verb.tag_
+            plural = subject_tag == 'NNS' or subject_tag == 'NNPS'
+
+
+            verb_str = verb.text
+            what_verb = verb.text
+            if tense == 'VBD':
+                question_tense1 = 'did'
+                verb_str = verb.lemma_
+            elif tense == 'VBG':
+                if plural:
+                    question_tense1 = 'are'
+                    what_tense = 'are'
+                else:
+                    question_tense1 = 'is'
+                    what_tense = 'is'
+            elif tense == 'VBN':
+                if plural:
+                    question_tense1 = 'have'
+                    what_tense = 'have'
+                else:
+                    question_tense1 = 'has'
+                    what_tense = 'has'
+            else:
+                if plural:
+                    question_tense1 = 'do'
+                else:
+                    question_tense1 = 'does'
+                verb_str = verb.lemma_
+
+
+            # print(why_dict, when_dict, where_dict)
+            # print(entity)
+            if verb.text in why_dict:
+                print("Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+            if verb.text in when_dict:
+                print("When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+            if verb.text in where_dict:
+                print("Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
 
             # generate question about subject
             question_type = "What"
@@ -118,6 +154,6 @@ if __name__ == '__main__':
                 if subject.lower() == key:
                     question_type = "Who"
                     break
-            print(question_type + " " + verb + " " + object + "?")
+            print(question_type + " " + (""if what_tense=="" else what_tense + " ") + what_verb + " " + object + "?")
 
 
