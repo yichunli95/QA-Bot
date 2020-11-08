@@ -51,20 +51,21 @@ def _get_objs_from_conjunctions(objs):
 
 # find sub dependencies
 def _find_subs(tok):
-    head = tok.head
-    while head.pos_ != "VERB" and head.pos_ != "NOUN" and head.head != head:
-        head = head.head
-    if head.pos_ == "VERB":
-        subs = [tok for tok in head.lefts if tok.dep_ == "SUB"]
-        if len(subs) > 0:
-            verb_negated = _is_negated(head)
-            subs.extend(_get_subs_from_conjunctions(subs))
-            return subs, verb_negated
-        elif head.head != head:
-            return _find_subs(head)
-    elif head.pos_ == "NOUN":
-        return [head], _is_negated(tok)
     return [], False
+    # head = tok.head
+    # while head.pos_ != "VERB" and head.pos_ != "NOUN" and head.head != head:
+    #     head = head.head
+    # if head.pos_ == "VERB":
+    #     subs = [tok for tok in head.lefts if tok.dep_ == "SUB"]
+    #     if len(subs) > 0:
+    #         verb_negated = _is_negated(head)
+    #         subs.extend(_get_subs_from_conjunctions(subs))
+    #         return subs, verb_negated
+    #     elif head.head != head:
+    #         return _find_subs(head)
+    # elif head.pos_ == "NOUN":
+    #     return [head], _is_negated(tok)
+    # return [], False
 
 
 # is the tok set's left or right negated?
@@ -182,7 +183,8 @@ def _get_all_objs(v, is_pas):
 
 
 # return true if the sentence is passive - at he moment a sentence is assumed passive if it has an auxpass verb
-def _is_passive(tokens):
+def _is_passive(v):
+    tokens = list(v.lefts) + list(v.rights)
     for tok in tokens:
         if tok.dep_ == "auxpass":
             return True
@@ -212,34 +214,38 @@ def printDeps(toks):
 
 
 # expand an obj / subj np using its chunk
-def expand(item, tokens, visited):
-    if item.lower_ == 'that':
+def expand(item, tokens, visited, level):
+    if item.lower_ == 'that' and level == 0:
         item = _get_that_resolution(tokens)
 
     parts = []
+    if item.i in visited:
+        return parts
+
+    visited.add(item.i)
     if hasattr(item, 'lefts'):
         for part in item.lefts:
-            if part.pos_ in BREAKER_POS:
-                break
+            if level == 0:
+                if part.pos_ in BREAKER_POS:
+                    break
             if not part.lower_ in NEGATIONS:
-                parts.append(part)
+                parts.extend(expand(part, tokens, visited, level + 1))
 
     parts.append(item)
 
     if hasattr(item, 'rights'):
         for part in item.rights:
-            if part.pos_ in BREAKER_POS:
-                break
+            if level == 0:
+                if part.pos_ in BREAKER_POS:
+                    break
             if not part.lower_ in NEGATIONS:
-                parts.append(part)
+                parts.extend(expand(part, tokens, visited, level + 1))
 
-    if hasattr(parts[-1], 'rights'):
-        for item2 in parts[-1].rights:
-            if item2.pos_ == "DET" or item2.pos_ == "NOUN":
-                if item2.i not in visited:
-                    visited.add(item2.i)
-                    parts.extend(expand(item2, tokens, visited))
-            break
+    # if parts[-1] != item:
+    #     if hasattr(parts[-1], 'rights'):
+    #         for item2 in parts[-1].rights:
+    #             visited.add(item2.i)
+    #             parts.extend(expand(item2, tokens, visited, level + 1))
 
     return parts
 
@@ -255,11 +261,9 @@ def to_str(tokens):
 # find verbs and their subjects / objects to create SVOs, detect passive/active sentences
 def findSVOs(tokens):
     svos = []
-    is_pas = _is_passive(tokens)
     verbs = [tok for tok in tokens if _is_non_aux_verb(tok)]
-
-    visited = set()  # recursion detection
     for v in verbs:
+        is_pas = _is_passive(v)
         subs, verbNegated = _get_all_subs(v)
         # hopefully there are subs, if not, don't examine this verb any longer
         if len(subs) > 0:
@@ -268,26 +272,31 @@ def findSVOs(tokens):
                 v2, objs = _get_all_objs(conjV, is_pas)
                 for sub in subs:
                     for obj in objs:
+                        visited = set()  # recursion detection
+                        visited.add(v.i)
+                        visited.add(v2.i)
                         objNegated = _is_negated(obj)
                         if is_pas:  # reverse object / subject for passive
-                            svos.append((to_str(expand(obj, tokens, visited)),
-                                         "!" + v.lemma_ if verbNegated or objNegated else v.lemma_, to_str(expand(sub, tokens, visited))))
-                            svos.append((to_str(expand(obj, tokens, visited)),
-                                         "!" + v2.lemma_ if verbNegated or objNegated else v2.lemma_, to_str(expand(sub, tokens, visited))))
+                            svos.append((to_str(expand(obj, tokens, visited, 0)),
+                                         "!" + v.lemma_ if verbNegated or objNegated else v.lemma_, to_str(expand(sub, tokens, visited, 0))))
+                            svos.append((to_str(expand(obj, tokens, visited, 0)),
+                                         "!" + v2.lemma_ if verbNegated or objNegated else v2.lemma_, to_str(expand(sub, tokens, visited, 0))))
                         else:
-                            svos.append((to_str(expand(sub, tokens, visited)),
-                                         "!" + v.lower_ if verbNegated or objNegated else v.lower_, to_str(expand(obj, tokens, visited))))
-                            svos.append((to_str(expand(sub, tokens, visited)),
-                                         "!" + v2.lower_ if verbNegated or objNegated else v2.lower_, to_str(expand(obj, tokens, visited))))
+                            svos.append((to_str(expand(sub, tokens, visited, 0)),
+                                         "!" + v.lower_ if verbNegated or objNegated else v.lower_, to_str(expand(obj, tokens, visited, 0))))
+                            svos.append((to_str(expand(sub, tokens, visited, 0)),
+                                         "!" + v2.lower_ if verbNegated or objNegated else v2.lower_, to_str(expand(obj, tokens, visited, 0))))
             else:
                 v, objs = _get_all_objs(v, is_pas)
                 for sub in subs:
                     for obj in objs:
+                        visited = set()  # recursion detection
+                        visited.add(v.i)
                         objNegated = _is_negated(obj)
                         if is_pas:  # reverse object / subject for passive
-                            svos.append((to_str(expand(obj, tokens, visited)),
-                                         "!" + v.lemma_ if verbNegated or objNegated else v.lemma_, to_str(expand(sub, tokens, visited))))
+                            svos.append((to_str(expand(obj, tokens, visited, 0)),
+                                         "!" + v.lemma_ if verbNegated or objNegated else v.lemma_, to_str(expand(sub, tokens, visited, 0))))
                         else:
-                            svos.append((to_str(expand(sub, tokens, visited)),
-                                         "!" + v.lower_ if verbNegated or objNegated else v.lower_, to_str(expand(obj, tokens, visited))))
+                            svos.append((to_str(expand(sub, tokens, visited, 0)),
+                                         "!" + v.lower_ if verbNegated or objNegated else v.lower_, to_str(expand(obj, tokens, visited, 0))))
     return svos

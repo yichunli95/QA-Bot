@@ -79,11 +79,11 @@ def generate_when_and_where_dict(token, word_token):
 if __name__ == '__main__':
     document = open_document("../data/set1/a1.txt")
     sentences = tokenize_sentence(document)
-    sentences = sentences[0:1]
+    sentences = sentences[0:10]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them']
 
     for sent in sentences:
-        sent = "In 2006, Viz released ten DVDs based around individual Pokémon in celebration of Pokémon's 10th anniversary in the United States. "
+        # sent = "In 2006, Viz released ten DVDs based around individual Pokémon in celebration of Pokémon's 10th anniversary in the United States. "
         token = nlp(sent)
         print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
@@ -95,29 +95,29 @@ if __name__ == '__main__':
         # print("why: ", why_dict)
         # print("when: ", when_dict)
         # print("where: ", where_dict)
-        # print("svo:", result)
-        print("Questions:")
-        for entity in result:
-            subject, verb, object = entity
-            # generate question about verb
-            if verb in why_dict:
-                print("Why did " + subject + " " + verb + " " + object + "?")
-            if verb in when_dict:
-                print("When did " + subject + " " + verb + " " + object + "?")
-            if verb in where_dict:
-                print("Where did " + subject + " " + verb + " " + object + "?")
-
-            # generate question about subject
-            question_type = "What"
-            for k, v in ner_dict.items():
-                if k in subject.lower() and v == 'PERSON':
-                    question_type = "Who"
-                    break
-
-            for key in who_key_word:
-                if subject.lower() == key:
-                    question_type = "Who"
-                    break
-            print(question_type + " " + verb + " " + object + "?")
+        print("svo:", result)
+        # print("Questions:")
+        # for entity in result:
+        #     subject, verb, object = entity
+        #     # generate question about verb
+        #     if verb in why_dict:
+        #         print("Why did " + subject + " " + verb + " " + object + "?")
+        #     if verb in when_dict:
+        #         print("When did " + subject + " " + verb + " " + object + "?")
+        #     if verb in where_dict:
+        #         print("Where did " + subject + " " + verb + " " + object + "?")
+        #
+        #     # generate question about subject
+        #     question_type = "What"
+        #     for k, v in ner_dict.items():
+        #         if k in subject.lower() and v == 'PERSON':
+        #             question_type = "Who"
+        #             break
+        #
+        #     for key in who_key_word:
+        #         if subject.lower() == key:
+        #             question_type = "Who"
+        #             break
+        #     print(question_type + " " + verb + " " + object + "?")
 
 
