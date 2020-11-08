@@ -79,7 +79,7 @@ def generate_when_and_where_dict(token, word_token):
 if __name__ == '__main__':
     document = open_document("../data/set1/a1.txt")
     sentences = tokenize_sentence(document)
-    sentences = sentences[0:10]
+    sentences = sentences[0:4]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them']
 
     for sent in sentences:
@@ -96,28 +96,58 @@ if __name__ == '__main__':
         # print("when: ", when_dict)
         # print("where: ", where_dict)
         print("svo:", result)
-        # print("Questions:")
-        # for entity in result:
-        #     subject, verb, object = entity
-        #     # generate question about verb
-        #     if verb in why_dict:
-        #         print("Why did " + subject + " " + verb + " " + object + "?")
-        #     if verb in when_dict:
-        #         print("When did " + subject + " " + verb + " " + object + "?")
-        #     if verb in where_dict:
-        #         print("Where did " + subject + " " + verb + " " + object + "?")
-        #
-        #     # generate question about subject
-        #     question_type = "What"
-        #     for k, v in ner_dict.items():
-        #         if k in subject.lower() and v == 'PERSON':
-        #             question_type = "Who"
-        #             break
-        #
-        #     for key in who_key_word:
-        #         if subject.lower() == key:
-        #             question_type = "Who"
-        #             break
-        #     print(question_type + " " + verb + " " + object + "?")
+        print("Questions:")
+        for entity in result:
+            subject, subject_tag, negation, verb, object = entity
+            # generate question about verb
+            question_tense1 = ''
+            what_tense = ''
+            tense = verb.tag_
+            plural = subject_tag == 'NNS' or subject_tag == 'NNPS'
 
+            verb_str = verb.text
+            what_verb = verb.text
+            if tense == 'VBD':
+                question_tense1 = 'did'
+                verb_str = verb.lemma_
+            elif tense == 'VBG':
+                if plural:
+                    question_tense1 = 'are'
+                    what_tense = 'are'
+                else:
+                    question_tense1 = 'is'
+                    what_tense = 'is'
+            elif tense == 'VBN':
+                if plural:
+                    question_tense1 = 'have'
+                    what_tense = 'have'
+                else:
+                    question_tense1 = 'has'
+                    what_tense = 'has'
+            else:
+                if plural:
+                    question_tense1 = 'do'
+                else:
+                    question_tense1 = 'does'
+                verb_str = verb.lemma_
 
+            # print(entity)
+            if verb.text in why_dict:
+                print("Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+            if verb.text in when_dict:
+                print("When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+            if verb.text in where_dict:
+                print("Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+
+            # generate question about subject
+            question_type = "What"
+            for k, v in ner_dict.items():
+                if k in subject.lower() and v == 'PERSON':
+                    question_type = "Who"
+                    break
+
+            for key in who_key_word:
+                if subject.lower() == key:
+                    question_type = "Who"
+                    break
+            print(question_type + " " + (""if what_tense=="" else what_tense + " ") + what_verb + " " + object + "?")
