@@ -83,10 +83,17 @@ if __name__ == '__main__':
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them']
 
     for sent in sentences:
-        # sent = "In 2006, Viz released ten DVDs based around individual Pokémon in celebration of Pokémon's 10th anniversary in the United States. "
+        # sent = "Although much of their artistic effort was centered on preserving life after death, Egyptians also surrounded themselves with objects to enhance their lives in this world, producing elegant jewelry, finely carved and inlaid furniture, and cosmetic vessels and implements made from a wide range of materials."
         token = nlp(sent)
         print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
+        # index = word_token.index("with")
+        # print(token[index].pos_, token[index].dep_)
+        # print(token[index].head)
+        # for e in token[index].lefts:
+        #     print(e, e.pos_, e.dep_)
+        # for e in token[index].rights:
+        #     print(e, e.pos_, e.dep_)
 
         why_dict = generate_why_dict(token, word_token)
         ner_dict, when_dict, where_dict = generate_when_and_where_dict(token, word_token)
@@ -98,7 +105,7 @@ if __name__ == '__main__':
         print("svo:", result)
         print("Questions:")
         for entity in result:
-            subject, subject_tag, negation, verb, object = entity
+            subject, subject_tag, negation, verb, object, verb_modifier = entity
             # generate question about verb
             question_tense1 = ''
             what_tense = ''
@@ -135,9 +142,23 @@ if __name__ == '__main__':
             if verb.text in why_dict:
                 print("Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
             if verb.text in when_dict:
-                print("When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+                question_status = False
+                for modifier in verb_modifier:
+                    for ner in when_dict[verb.text]:
+                        if ner in modifier:
+                            question_status = True
+                            break
+                if question_status:
+                    print("When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
             if verb.text in where_dict:
-                print("Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+                question_status = False
+                for modifier in verb_modifier:
+                    for ner in where_dict[verb.text]:
+                        if ner in modifier:
+                            question_status = True
+                            break
+                if question_status:
+                    print("Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
 
             # generate question about subject
             question_type = "What"

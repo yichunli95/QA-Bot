@@ -9,7 +9,7 @@ OBJECTS = {"dobj", "dative", "attr", "oprd"}
 BREAKER_POS = {"CCONJ", "VERB"}
 # words that are negations
 NEGATIONS = {"no", "not", "n't", "never", "none"}
-
+verb_modifier = {"advcl", "prepc", "purpcl"}
 nlp = spacy.load('en_core_web_sm')
 
 
@@ -258,6 +258,50 @@ def to_str(tokens):
         return ''
 
 
+def get_modifier(tok, visited):
+    modifier = []
+    children = list(tok.lefts) + list(tok.rights)
+    for e in children:
+        if e.dep_ in verb_modifier:
+            modifier.append(to_str(expand_modifier(e)))
+        elif e.dep_ == "prep":
+            expand_status = True
+            for e_children in e.rights:
+                if e_children.i in visited:
+                    expand_status = False
+                    break
+            if expand_status:
+                modifier.append(to_str(expand_modifier(e)))
+        elif e.pos_ == "VERB":
+            expand_status = False
+            for e_children in e.lefts:
+                if e_children.dep_ == "advmod":
+                    expand_status = True
+                    break
+            for e_children in e.rights:
+                if e_children.dep_ == "advmod":
+                    expand_status = True
+                    break
+            if expand_status:
+                modifier.append(to_str(expand_modifier(e)))
+    return modifier
+
+
+def expand_modifier(item):
+    parts = []
+    if hasattr(item, 'lefts'):
+        for part in item.lefts:
+            parts.extend(expand_modifier(part))
+
+    parts.append(item)
+
+    if hasattr(item, 'rights'):
+        for part in item.rights:
+            parts.extend(expand_modifier(part))
+
+    return parts
+
+
 # find verbs and their subjects / objects to create SVOs, detect passive/active sentences
 def findSVOs(tokens):
     svos = []
@@ -281,17 +325,21 @@ def findSVOs(tokens):
                         if is_pas:  # reverse object / subject for passive
                             svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(sub, tokens, visited, 0))))
+                                         v, to_str(expand(sub, tokens, visited, 0)),
+                                         get_modifier(v, visited) + get_modifier(v2, visited)))
                             svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v2, to_str(expand(sub, tokens, visited, 0))))
+                                         v2, to_str(expand(sub, tokens, visited, 0)),
+                                         get_modifier(v, visited) + get_modifier(v2, visited)))
                         else:
                             svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(obj, tokens, visited, 0))))
+                                         v, to_str(expand(obj, tokens, visited, 0)),
+                                         get_modifier(v, visited) + get_modifier(v2, visited)))
                             svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v2, to_str(expand(obj, tokens, visited, 0))))
+                                         v2, to_str(expand(obj, tokens, visited, 0)),
+                                         get_modifier(v, visited) + get_modifier(v2, visited)))
             else:
                 v, objs = _get_all_objs(v, is_pas)
                 for sub in subs:
@@ -302,9 +350,11 @@ def findSVOs(tokens):
                         if is_pas:  # reverse object / subject for passive
                             svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(sub, tokens, visited, 0))))
+                                         v, to_str(expand(sub, tokens, visited, 0)),
+                                         get_modifier(v, visited)))
                         else:
                             svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(obj, tokens, visited, 0))))
+                                         v, to_str(expand(obj, tokens, visited, 0)),
+                                         get_modifier(v, visited)))
     return svos
