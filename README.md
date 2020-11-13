@@ -4,3 +4,4 @@ Check the latest QA code here: https://colab.research.google.com/drive/1fgTBqYwH
 QA todo:
   - Sentence reranker
   - InferSent + BM25
+  - Preprocess file to remove redundant information including titles, references...
