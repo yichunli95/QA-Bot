@@ -3,6 +3,7 @@ import io
 import nltk
 import re
 import spacy
+import random
 from svo import nlp, findSVOs
 
 
@@ -188,5 +189,10 @@ def generate_questions(document_path):
     return question_set
 
 if __name__ == '__main__':
-    document_path = "../data/set3/a1.txt"
-    generate_questions(document_path)
+    # document_path = "../data/set3/a1.txt"
+
+    for s in range(1,5):
+        for a in range(1,11):
+            document_path = f"../dryrun-data/set{s}/a{a}.txt"
+            question_set = generate_questions(document_path)
+            print(random.sample(question_set, 1),s,a)

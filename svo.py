@@ -219,7 +219,7 @@ def expand(item, tokens, visited, level):
         item = _get_that_resolution(tokens)
 
     parts = []
-    if item.i in visited:
+    if not hasattr(item, 'i') or item.i in visited:
         return parts
 
     visited.add(item.i)
