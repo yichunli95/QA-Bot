@@ -29,12 +29,15 @@ def generate_why_dict(token, word_token):
     why_dict = {}
     for key in why_key_word:
         if key in word_token:
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in why_dict:
-                why_dict[v] = []
-            why_dict[v].append(key)
+            try:
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in why_dict:
+                    why_dict[v] = []
+                why_dict[v].append(key)
+            except:
+                continue
     return why_dict
 
 
@@ -49,30 +52,36 @@ def generate_when_and_where_dict(token, word_token):
         ner_dict[entity[0].lower()] = entity[1]
 
         if entity[1] in when_key_word:
-            key = entity[0].lower()
-            if ' ' in key:
-                key = key.split(' ')[0]
-            if '-' in key:
-                key = key.split('-')[0]
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in when_dict:
-                when_dict[v] = []
-            when_dict[v].append(entity[0])
+            try:
+                key = entity[0].lower()
+                if ' ' in key:
+                    key = key.split(' ')[0]
+                if '-' in key:
+                    key = key.split('-')[0]
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in when_dict:
+                    when_dict[v] = []
+                when_dict[v].append(entity[0])
+            except:
+                continue
 
         if entity[1] in where_key_word:
-            key = entity[0].lower()
-            if ' ' in key:
-                key = key.split(' ')[0]
-            if '-' in key:
-                key = key.split('-')[0]
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in where_dict:
-                where_dict[v] = []
-            where_dict[v].append(entity[0])
+            try:
+                key = entity[0].lower()
+                if ' ' in key:
+                    key = key.split(' ')[0]
+                if '-' in key:
+                    key = key.split('-')[0]
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in where_dict:
+                    where_dict[v] = []
+                where_dict[v].append(entity[0])
+            except:
+                continue
     return ner_dict, when_dict, where_dict
 
 def generate_questions(document_path):
@@ -94,7 +103,6 @@ def generate_questions(document_path):
         #     print(e, e.pos_, e.dep_)
         # for e in token[index].rights:
         #     print(e, e.pos_, e.dep_)
-
         why_dict = generate_why_dict(token, word_token)
         ner_dict, when_dict, where_dict = generate_when_and_where_dict(token, word_token)
 
