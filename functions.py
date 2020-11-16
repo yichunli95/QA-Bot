@@ -2,7 +2,6 @@
 import io
 import nltk
 import re
-import spacy
 from svo import nlp, findSVOs
 
 
@@ -79,13 +78,13 @@ def generate_when_and_where_dict(token, word_token):
 if __name__ == '__main__':
     document = open_document("../data/set1/a1.txt")
     sentences = tokenize_sentence(document)
-    sentences = sentences[0:4]
-    who_key_word = ['he', 'she', 'they', 'him', 'her', 'them']
+    # sentences = sentences[0:4]
+    who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
 
     for sent in sentences:
         # sent = "Although much of their artistic effort was centered on preserving life after death, Egyptians also surrounded themselves with objects to enhance their lives in this world, producing elegant jewelry, finely carved and inlaid furniture, and cosmetic vessels and implements made from a wide range of materials."
         token = nlp(sent)
-        print("Sentence: ", token)
+        # print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
         # index = word_token.index("with")
         # print(token[index].pos_, token[index].dep_)
@@ -102,8 +101,8 @@ if __name__ == '__main__':
         # print("why: ", why_dict)
         # print("when: ", when_dict)
         # print("where: ", where_dict)
-        print("svo:", result)
-        print("Questions:")
+        # print("svo:", result)
+        # print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, verb_modifier = entity
             # generate question about verb
@@ -171,4 +170,6 @@ if __name__ == '__main__':
                 if subject.lower() == key:
                     question_type = "Who"
                     break
-            print(question_type + " " + (""if what_tense=="" else what_tense + " ") + what_verb + " " + object + "?")
+            print(question_type + " " + ("" if what_tense == "" else what_tense + " ") + what_verb + " " + object + "?")
+            print(subject)
+
