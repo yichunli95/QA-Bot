@@ -2,6 +2,8 @@
 import io
 import nltk
 import re
+import spacy
+import random
 from svo import nlp, findSVOs
 
 
@@ -24,16 +26,19 @@ def find_verb(tok):
 
 
 def generate_why_dict(token, word_token):
-    why_key_word = ['because', 'as a result']
+    why_key_word = ['because']
     why_dict = {}
     for key in why_key_word:
         if key in word_token:
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in why_dict:
-                why_dict[v] = []
-            why_dict[v].append(key)
+            try:
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in why_dict:
+                    why_dict[v] = []
+                why_dict[v].append(key)
+            except:
+                continue
     return why_dict
 
 
@@ -48,41 +53,52 @@ def generate_when_and_where_dict(token, word_token):
         ner_dict[entity[0].lower()] = entity[1]
 
         if entity[1] in when_key_word:
-            key = entity[0].lower()
-            if ' ' in key:
-                key = key.split(' ')[0]
-            if '-' in key:
-                key = key.split('-')[0]
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in when_dict:
-                when_dict[v] = []
-            when_dict[v].append(entity[0])
+            try:
+                key = entity[0].lower()
+                if ',' in key:
+                    key = key.split(',')[0]
+                if ' ' in key:
+                    key = key.split(' ')[0]
+                if '-' in key:
+                    key = key.split('-')[0]
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in when_dict:
+                    when_dict[v] = []
+                when_dict[v].append(entity[0])
+            except:
+                continue
 
         if entity[1] in where_key_word:
-            key = entity[0].lower()
-            if ' ' in key:
-                key = key.split(' ')[0]
-            if '-' in key:
-                key = key.split('-')[0]
-            index = word_token.index(key)
-            tok = token[index]
-            v = find_verb(tok).text
-            if v not in where_dict:
-                where_dict[v] = []
-            where_dict[v].append(entity[0])
+            try:
+                key = entity[0].lower()
+                if ',' in key:
+                    key = key.split(',')[0]
+                if ' ' in key:
+                    key = key.split(' ')[0]
+                if '-' in key:
+                    key = key.split('-')[0]
+                index = word_token.index(key)
+                tok = token[index]
+                v = find_verb(tok).text
+                if v not in where_dict:
+                    where_dict[v] = []
+                where_dict[v].append(entity[0])
+            except:
+                continue
     return ner_dict, when_dict, where_dict
+
 
 def generate_questions(document_path):
     document = open_document(document_path)
     sentences = tokenize_sentence(document)
-    # sentences = sentences[0:10]
+    # sentences = sentences[0:1]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
     question_set = set()
 
     for sent in sentences:
-        # sent = "Although much of their artistic effort was centered on preserving life after death, Egyptians also surrounded themselves with objects to enhance their lives in this world, producing elegant jewelry, finely carved and inlaid furniture, and cosmetic vessels and implements made from a wide range of materials."
+        # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
         token = nlp(sent)
         # print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
@@ -93,7 +109,6 @@ def generate_questions(document_path):
         #     print(e, e.pos_, e.dep_)
         # for e in token[index].rights:
         #     print(e, e.pos_, e.dep_)
-
         why_dict = generate_why_dict(token, word_token)
         ner_dict, when_dict, where_dict = generate_when_and_where_dict(token, word_token)
 
@@ -102,6 +117,8 @@ def generate_questions(document_path):
         # print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, verb_modifier = entity
+            if subject == ' ':
+                continue
             # generate question about verb
             question_tense1 = ''
             what_tense = ''
@@ -136,7 +153,7 @@ def generate_questions(document_path):
 
             # print(entity)
             if verb.text in why_dict:
-                q = "Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + (""if len(verb_modifier)==0 else " " + verb_modifier[0] )+ "?"
+                q = "Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + (""if len(verb_modifier) == 0 else " " + verb_modifier[0]) + "?"
                 question_set.add(q)
             if verb.text in when_dict:
                 question_status = False
@@ -171,11 +188,19 @@ def generate_questions(document_path):
                     question_type = "Who"
                     break
 
-            q = question_type + " " + (""if what_tense=="" else what_tense + " ") + what_verb + " " + object + (""if len(verb_modifier)==0 else " " + verb_modifier[0] )+ "?"
+            q = question_type + " " + (""if what_tense == "" else what_tense + " ") + what_verb + " " + object + (""if len(verb_modifier) == 0 else " " + verb_modifier[0]) + "?"
             question_set.add(q)
     # print(len(question_set))
+    # print(question_set)
     return question_set
 
+
 if __name__ == '__main__':
-    document_path = "../data/set3/a1.txt"
-    generate_questions(document_path)
+    # document_path = "../data/set1/a1.txt"
+    # question_set = generate_questions(document_path)
+
+    for s in range(1, 5):
+        for a in range(1, 11):
+            document_path = f"../data/set{s}/a{a}.txt"
+            question_set = generate_questions(document_path)
+            # print(random.sample(question_set, 1), s, a)

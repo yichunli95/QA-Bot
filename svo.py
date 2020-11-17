@@ -100,21 +100,6 @@ def _get_objs_from_prepositions(deps, is_pas):
     return objs
 
 
-# get objects from the dependencies using the attribute dependency
-def _get_objs_from_attrs(deps, is_pas):
-    for dep in deps:
-        if dep.pos_ == "NOUN" and dep.dep_ == "attr":
-            verbs = [tok for tok in dep.rights if tok.pos_ == "VERB"]
-            if len(verbs) > 0:
-                for v in verbs:
-                    rights = list(v.rights)
-                    objs = [tok for tok in rights if tok.dep_ in OBJECTS]
-                    objs.extend(_get_objs_from_prepositions(rights, is_pas))
-                    if len(objs) > 0:
-                        return v, objs
-    return None, None
-
-
 # xcomp; open complement - verb has no suject
 def _get_obj_from_xcomp(deps, is_pas):
     for dep in deps:
@@ -137,6 +122,8 @@ def _get_all_subs(v):
     else:
         foundSubs, verb_negated = _find_subs(v)
         subs.extend(foundSubs)
+    if len(subs) == 0:
+        subs.append(' ')
     return subs, verb_negated
 
 
@@ -166,19 +153,16 @@ def _get_all_objs(v, is_pas):
     rights = list(v.rights)
 
     objs = [tok for tok in rights if tok.dep_ in OBJECTS or (is_pas and tok.dep_ == 'pobj')]
-    objs.extend(_get_objs_from_prepositions(rights, is_pas))
+    # objs.extend(_get_objs_from_prepositions(rights, is_pas))
 
-    #potentialNewVerb, potentialNewObjs = _get_objs_from_attrs(rights)
-    #if potentialNewVerb is not None and potentialNewObjs is not None and len(potentialNewObjs) > 0:
-    #    objs.extend(potentialNewObjs)
-    #    v = potentialNewVerb
-
-    potential_new_verb, potential_new_objs = _get_obj_from_xcomp(rights, is_pas)
-    if potential_new_verb is not None and potential_new_objs is not None and len(potential_new_objs) > 0:
-        objs.extend(potential_new_objs)
-        v = potential_new_verb
+    # potential_new_verb, potential_new_objs = _get_obj_from_xcomp(rights, is_pas)
+    # if potential_new_verb is not None and potential_new_objs is not None and len(potential_new_objs) > 0:
+    #     objs.extend(potential_new_objs)
+    #     v = potential_new_verb
     if len(objs) > 0:
         objs.extend(_get_objs_from_conjunctions(objs))
+    if len(objs) == 0:
+        objs.append(' ')
     return v, objs
 
 
@@ -192,11 +176,11 @@ def _is_passive(v):
 
 
 # resolve a 'that' where/if appropriate
-def _get_that_resolution(toks):
+def _get_that_resolution(item, toks):
     for tok in toks:
         if 'that' in [t.orth_ for t in tok.lefts]:
             return tok.head
-    return toks
+    return item
 
 
 # simple stemmer using lemmas
@@ -216,7 +200,7 @@ def printDeps(toks):
 # expand an obj / subj np using its chunk
 def expand(item, tokens, visited, level):
     if item.lower_ == 'that' and level == 0:
-        item = _get_that_resolution(tokens)
+        item = _get_that_resolution(item, tokens)
 
     parts = []
     if item.i in visited:
@@ -241,12 +225,6 @@ def expand(item, tokens, visited, level):
             if not part.lower_ in NEGATIONS:
                 parts.extend(expand(part, tokens, visited, level + 1))
 
-    # if parts[-1] != item:
-    #     if hasattr(parts[-1], 'rights'):
-    #         for item2 in parts[-1].rights:
-    #             visited.add(item2.i)
-    #             parts.extend(expand(item2, tokens, visited, level + 1))
-
     return parts
 
 
@@ -265,13 +243,13 @@ def get_modifier(tok, visited):
         if e.dep_ in verb_modifier:
             modifier.append(to_str(expand_modifier(e)))
         elif e.dep_ == "prep":
-            expand_status = True
-            for e_children in e.rights:
-                if e_children.i in visited:
-                    expand_status = False
-                    break
-            if expand_status:
-                modifier.append(to_str(expand_modifier(e)))
+            # expand_status = True
+            # for e_children in e.rights:
+            #     if e_children.i in visited:
+            #         expand_status = False
+            #         break
+            # if expand_status:
+            modifier.append(to_str(expand_modifier(e)))
         elif e.pos_ == "VERB":
             expand_status = False
             for e_children in e.lefts:
@@ -307,7 +285,6 @@ def findSVOs(tokens):
     svos = []
     verbs = [tok for tok in tokens if _is_non_aux_verb(tok)]
     for v in verbs:
-        is_pas = _is_passive(v)
         subs, verbNegated = _get_all_subs(v)
         is_pas = _is_passive(v)
         # hopefully there are subs, if not, don't examine this verb any longer
@@ -321,40 +298,64 @@ def findSVOs(tokens):
                         visited = set()  # recursion detection
                         visited.add(v.i)
                         visited.add(v2.i)
-                        objNegated = _is_negated(obj)
-                        if is_pas:  # reverse object / subject for passive
-                            svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
-                                         "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(sub, tokens, visited, 0)),
-                                         get_modifier(v, visited) + get_modifier(v2, visited)))
-                            svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
-                                         "not" if verbNegated or objNegated else "",
-                                         v2, to_str(expand(sub, tokens, visited, 0)),
-                                         get_modifier(v, visited) + get_modifier(v2, visited)))
+                        if isinstance(sub, str):
+                            subject = ' '
+                            subject_tag = 'default'
                         else:
-                            svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
+                            subject = to_str(expand(sub, tokens, visited, 0))
+                            subject_tag = sub.tag_
+
+                        if isinstance(obj, str):
+                            object = ' '
+                            object_tag = 'default'
+                            objNegated = False
+                        else:
+                            object = to_str(expand(obj, tokens, visited, 0))
+                            object_tag = obj.tag_
+                            objNegated = _is_negated(obj)
+
+                        if is_pas:  # reverse object / subject for passive
+                            svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(obj, tokens, visited, 0)),
-                                         get_modifier(v, visited) + get_modifier(v2, visited)))
-                            svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
+                                         v, subject, get_modifier(v, visited) + get_modifier(v2, visited)))
+                            svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v2, to_str(expand(obj, tokens, visited, 0)),
-                                         get_modifier(v, visited) + get_modifier(v2, visited)))
+                                         v2, subject, get_modifier(v, visited) + get_modifier(v2, visited)))
+                        else:
+                            svos.append((subject, subject_tag,
+                                         "not" if verbNegated or objNegated else "",
+                                         v, object, get_modifier(v, visited) + get_modifier(v2, visited)))
+                            svos.append((subject, subject_tag,
+                                         "not" if verbNegated or objNegated else "",
+                                         v2, object_tag, get_modifier(v, visited) + get_modifier(v2, visited)))
             else:
                 v, objs = _get_all_objs(v, is_pas)
                 for sub in subs:
                     for obj in objs:
                         visited = set()  # recursion detection
                         visited.add(v.i)
-                        objNegated = _is_negated(obj)
-                        if is_pas:  # reverse object / subject for passive
-                            svos.append((to_str(expand(obj, tokens, visited, 0)), obj.tag_,
-                                         "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(sub, tokens, visited, 0)),
-                                         get_modifier(v, visited)))
+                        if isinstance(sub, str):
+                            subject = ' '
+                            subject_tag = 'default'
                         else:
-                            svos.append((to_str(expand(sub, tokens, visited, 0)), sub.tag_,
+                            subject = to_str(expand(sub, tokens, visited, 0))
+                            subject_tag = sub.tag_
+
+                        if isinstance(obj, str):
+                            object = ' '
+                            object_tag = 'default'
+                            objNegated = False
+                        else:
+                            object = to_str(expand(obj, tokens, visited, 0))
+                            object_tag = obj.tag_
+                            objNegated = _is_negated(obj)
+
+                        if is_pas:  # reverse object / subject for passive
+                            svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, to_str(expand(obj, tokens, visited, 0)),
-                                         get_modifier(v, visited)))
+                                         v, subject, get_modifier(v, visited)))
+                        else:
+                            svos.append((subject, subject_tag,
+                                         "not" if verbNegated or objNegated else "",
+                                         v, object, get_modifier(v, visited)))
     return svos
