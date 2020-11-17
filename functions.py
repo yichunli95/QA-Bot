@@ -74,12 +74,12 @@ def generate_when_and_where_dict(token, word_token):
             where_dict[v].append(entity[0])
     return ner_dict, when_dict, where_dict
 
-
-if __name__ == '__main__':
-    document = open_document("../data/set1/a1.txt")
+def generate_questions(document_path):
+    document = open_document(document_path)
     sentences = tokenize_sentence(document)
-    # sentences = sentences[0:4]
+    # sentences = sentences[0:10]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
+    question_set = set()
 
     for sent in sentences:
         # sent = "Although much of their artistic effort was centered on preserving life after death, Egyptians also surrounded themselves with objects to enhance their lives in this world, producing elegant jewelry, finely carved and inlaid furniture, and cosmetic vessels and implements made from a wide range of materials."
@@ -98,9 +98,6 @@ if __name__ == '__main__':
         ner_dict, when_dict, where_dict = generate_when_and_where_dict(token, word_token)
 
         result = findSVOs(token)
-        # print("why: ", why_dict)
-        # print("when: ", when_dict)
-        # print("where: ", where_dict)
         # print("svo:", result)
         # print("Questions:")
         for entity in result:
@@ -126,7 +123,7 @@ if __name__ == '__main__':
             elif tense == 'VBN':
                 if plural:
                     question_tense1 = 'have'
-                    what_tense = 'have'
+                    what_tense = 'has'
                 else:
                     question_tense1 = 'has'
                     what_tense = 'has'
@@ -139,7 +136,8 @@ if __name__ == '__main__':
 
             # print(entity)
             if verb.text in why_dict:
-                print("Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+                q = "Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + (""if len(verb_modifier)==0 else " " + verb_modifier[0] )+ "?"
+                question_set.add(q)
             if verb.text in when_dict:
                 question_status = False
                 for modifier in verb_modifier:
@@ -148,7 +146,8 @@ if __name__ == '__main__':
                             question_status = True
                             break
                 if question_status:
-                    print("When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+                    q = "When " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?"
+                    question_set.add(q)
             if verb.text in where_dict:
                 question_status = False
                 for modifier in verb_modifier:
@@ -157,7 +156,8 @@ if __name__ == '__main__':
                             question_status = True
                             break
                 if question_status:
-                    print("Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?")
+                    q = "Where " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?"
+                    question_set.add(q)
 
             # generate question about subject
             question_type = "What"
@@ -170,6 +170,12 @@ if __name__ == '__main__':
                 if subject.lower() == key:
                     question_type = "Who"
                     break
-            print(question_type + " " + ("" if what_tense == "" else what_tense + " ") + what_verb + " " + object + "?")
-            print(subject)
 
+            q = question_type + " " + (""if what_tense=="" else what_tense + " ") + what_verb + " " + object + (""if len(verb_modifier)==0 else " " + verb_modifier[0] )+ "?"
+            question_set.add(q)
+    # print(len(question_set))
+    return question_set
+
+if __name__ == '__main__':
+    document_path = "../data/set3/a1.txt"
+    generate_questions(document_path)
