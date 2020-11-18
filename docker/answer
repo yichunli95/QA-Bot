@@ -1,0 +1,14 @@
+#!/usr/bin/python3 -W ignore
+# -*- coding:utf8 -*-
+
+import sys
+from ans_engine import ans
+
+
+if __name__ == "__main__":
+    input_file = sys.argv[1]
+    question_file = sys.argv[2]
+    ans.answer(input_file, question_file)
+
+
+#/usr/bin/env python3 -W ignore::DeprecationWarning

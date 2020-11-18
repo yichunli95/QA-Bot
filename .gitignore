@@ -3,4 +3,15 @@
 .idea/workspace.xml
 .idea/vcs.xml
 __pycache__
-__pycache__/svo.cpython-37.pyc
+Development_data.zip
+noun_counting_data.zip
+.gitignore
+Development_data/
+noun_counting_data/
+answer_cached_models/
+data/
+docker/__pycache__
+docker/ans_engine/__pycache__
+docker/ask_engine/__pycache__
+docker/encoder/
+docker/GloVe/

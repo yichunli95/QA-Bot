@@ -1,2 +1,7 @@
+# For ask
 nltk
 spacy
+
+# For answer
+transformers
+rank_bm25
