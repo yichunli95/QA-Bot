@@ -14,7 +14,7 @@ if __name__ == "__main__":
 	if N <= len(question_set):
 		question_list = random.sample(question_set, N)
 	else:
-		question_list = random.sample(question_set, N)
+		question_list = random.sample(question_set, len(question_set))
 		question_list.extend(random.choices(question_set, N - len(question_set)))
 	for i in range(N):
 		print(question_list[i])
