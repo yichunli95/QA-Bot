@@ -8,6 +8,7 @@ SUBJECTS = {"nsubj", "nsubjpass", "csubj", "csubjpass", "agent", "expl"}
 # dependency markers for objects
 OBJECTS = {"dobj", "dative", "attr", "oprd"}
 # POS tags that will break adjoining items
+# BREAKER_POS = {"CCONJ", "VERB"}
 BREAKER_POS = {"CCONJ"}
 # words that are negations
 NEGATIONS = {"no", "not", "n't", "never", "none"}
@@ -226,7 +227,8 @@ def expand(item, tokens, visited, level):
                     break
             if not part.lower_ in NEGATIONS:
                 parts.extend(expand(part, tokens, visited, level + 1))
-
+    if item.text == "way":
+        print(parts)
     return parts
 
 

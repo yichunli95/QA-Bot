@@ -9,8 +9,8 @@ import nltk
 import re
 import spacy
 import random
-
-from . import svo
+import svo
+# from . import svo
 #from svo import nlp, findSVOs
 
 
@@ -122,12 +122,12 @@ def generate_question_modifier(sent, subject, object, verb_modifier, exception_l
 def generate_questions(document_path):
     document = open_document(document_path)
     sentences = tokenize_sentence(document)
-    # sentences = sentences[0:10]
+    sentences = sentences[0:1]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
     question_set = set()
 
     for sent in sentences:
-        # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
+        sent = "I dislike him."
         token = svo.nlp(sent)
         print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
@@ -179,7 +179,7 @@ def generate_questions(document_path):
                     question_tense1 = 'does'
                 verb_str = verb.lemma_
 
-            # generate why question
+            # print(entity)
             if verb.text in why_dict:
                 why_key_word = ['because']
                 exception_list = []
@@ -192,8 +192,6 @@ def generate_questions(document_path):
                     q = "Why " + question_tense1 + " " + subject + " " + verb_str + ("" if object == " " else " " + object) + modifier_sent + "?"
                     print(q)
                     question_set.add(q)
-
-            # generate when question
             if verb.text in when_dict:
                 exception_list = []
                 question_status = False
@@ -208,8 +206,6 @@ def generate_questions(document_path):
                         q = "When " + question_tense1 + " " + subject + " " + verb_str + ("" if object == " " else " " + object) + modifier_sent + "?"
                         print(q)
                         question_set.add(q)
-
-            # generate where question
             if verb.text in where_dict:
                 exception_list = []
                 question_status = False
@@ -226,7 +222,6 @@ def generate_questions(document_path):
                         question_set.add(q)
 
             modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, [])
-
             # generate question about subject
             if subject != " ":
                 question_type = "What"
@@ -269,11 +264,11 @@ def generate_questions(document_path):
 
 
 if __name__ == '__main__':
-    # document_path = "../data/set1/a1.txt"
-    # question_set = generate_questions(document_path)
+    document_path = "../data/set3/a5.txt"
+    question_set = generate_questions(document_path)
 
-    for s in range(1, 5):
-        for a in range(1, 11):
-            document_path = f"../data/set{s}/a{a}.txt"
-            question_set = generate_questions(document_path)
-            print(random.sample(question_set, 1), s, a)
+    # for s in range(1, 5):
+    #     for a in range(1, 11):
+    #         document_path = f"../data/set{s}/a{a}.txt"
+    #         question_set = generate_questions(document_path)
+    #         print(random.sample(question_set, 1), s, a)
