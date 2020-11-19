@@ -100,14 +100,14 @@ def generate_when_and_where_dict(token, word_token):
 def generate_questions(document_path):
     document = open_document(document_path)
     sentences = tokenize_sentence(document)
-    # sentences = sentences[0:1]
+    # sentences = sentences[0:10]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
     question_set = set()
 
     for sent in sentences:
         # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
         token = svo.nlp(sent)
-        # print("Sentence: ", token)
+        print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
         # index = word_token.index("with")
         # print(token[index].pos_, token[index].dep_)
@@ -121,11 +121,12 @@ def generate_questions(document_path):
 
         result = svo.findSVOs(token)
         # print("svo:", result)
-        # print("Questions:")
+        print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, verb_modifier = entity
             if subject == ' ':
                 continue
+            print(entity)
             # generate question about verb
             question_tense1 = ''
             what_tense = ''
@@ -160,7 +161,7 @@ def generate_questions(document_path):
 
             # print(entity)
             if verb.text in why_dict:
-                q = "Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + (""if len(verb_modifier) == 0 else " " + verb_modifier[0]) + "?"
+                q = "Why " + question_tense1 + " " + subject + " " + verb_str + " " + object + "?"
                 question_set.add(q)
             if verb.text in when_dict:
                 question_status = False
@@ -195,8 +196,28 @@ def generate_questions(document_path):
                     question_type = "Who"
                     break
 
-            q = question_type + " " + (""if what_tense == "" else what_tense + " ") + what_verb + " " + object + (""if len(verb_modifier) == 0 else " " + verb_modifier[0]) + "?"
+            start, end = len(sent),-1
+            svo_end = max(sent.find(subject)+len(subject),sent.find(object)+len(object))
+            for modifier in verb_modifier:
+                idx = sent.find(' '.join(modifier.split(' ')[0:2]))
+                if idx>=svo_end and idx<start:
+                    start = idx
+                if idx>=svo_end and idx+len(modifier)>end:
+                    end = idx+len(modifier)
+
+            modifier_sent = (""if len(verb_modifier) == 0 else " " + sent[start:end+1])
+            if modifier_sent and modifier_sent[-1]=='.':
+                modifier_sent = modifier_sent[:-1]
+
+            q = question_type + " " + (""if what_tense == "" else what_tense + " ") + what_verb + ("" if object=="" or object==" " else " " + object) + modifier_sent + "?"
+            print(q)
             question_set.add(q)
+            if object!="" and object!=" ":
+                q_obj = question_type + " " + question_tense1 + " " + subject + " " + verb_str  + modifier_sent + "?"
+                print(q_obj)
+                question_set.add(q_obj)
+
+
     # print(len(question_set))
     # print(question_set)
     return question_set
@@ -210,4 +231,4 @@ if __name__ == '__main__':
         for a in range(1, 11):
             document_path = f"../data/set{s}/a{a}.txt"
             question_set = generate_questions(document_path)
-            # print(random.sample(question_set, 1), s, a)
+            print(random.sample(question_set, 1), s, a)
