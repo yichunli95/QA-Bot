@@ -32,11 +32,13 @@ def find_verb(tok):
         head = head.head
     return head
 
+
 def format_subject(ner_dict, subject):
     subject_formatted = subject.split(' ')
     subject_formatted[0] = subject_formatted[0].lower()
     subject_formatted = subject if subject_formatted[0] in ner_dict.keys() else ' '.join(subject_formatted)
     return subject_formatted
+
 
 def generate_why_dict(token, word_token):
     why_key_word = ['because']
@@ -153,6 +155,15 @@ def generate_questions(document_path):
         print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, verb_modifier = entity
+            if subject != " ":
+                subject = subject.strip()
+                if subject[-1] == '.' or subject[-1] == ',':
+                    subject = subject[:-1]
+            if object != " ":
+                object = object.strip()
+                if object[-1] == '.' or object[-1] == ',':
+                    object = object[:-1]
+
             subject_formatted = format_subject(ner_dict, subject)
             object_formatted = format_subject(ner_dict, object)
             # if negation!="":
@@ -212,7 +223,7 @@ def generate_questions(document_path):
                 modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, exception_list)
                 if subject != " ":
                     q = "Why " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
-                    if len(q)>=question_length_limit:
+                    if len(q) >= question_length_limit:
                         print(q)
                         question_set.add(q)
 
@@ -283,7 +294,6 @@ def generate_questions(document_path):
                     if object.lower() == key:
                         question_type = "Who"
                         break
-
 
                 q_obj = question_type + " " + question_tense1 + (
                     "" if subject_formatted == " " else " " + subject_formatted) + " " + verb_str + modifier_sent + "?"
