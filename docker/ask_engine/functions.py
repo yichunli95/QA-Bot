@@ -102,9 +102,9 @@ def generate_question_modifier(sent, subject, object, verb_modifier, exception_l
     start, end = len(sent), -1
     svo_end = max(sent.find(subject) + len(subject), sent.find(object) + len(object))
     for modifier in verb_modifier:
-        if modifier in exception_list:
-            continue
         idx = sent.find(' '.join(modifier.split(' ')[0:2]))
+        if idx >= svo_end and modifier in exception_list:
+            break
         if svo_end <= idx < start:
             start = idx
         if idx >= svo_end and idx + len(modifier) > end:
@@ -215,7 +215,7 @@ def generate_questions(document_path):
                 question_status = False
                 for modifier in verb_modifier:
                     for ner in where_dict[verb.text]:
-                        if ner in modifier:
+                        if "in " + ner in modifier or "at " + ner in modifier:
                             question_status = True
                             exception_list.append(modifier)
                 if question_status:
