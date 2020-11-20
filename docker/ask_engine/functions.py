@@ -9,6 +9,7 @@ import nltk
 import re
 import spacy
 import random
+import pyinflect
 
 from . import svo
 #from svo import nlp, findSVOs
@@ -31,6 +32,11 @@ def find_verb(tok):
         head = head.head
     return head
 
+def format_subject(ner_dict, subject):
+    subject_formatted = subject.split(' ')
+    subject_formatted[0] = subject_formatted[0].lower()
+    subject_formatted = subject if subject_formatted[0] in ner_dict.keys() else ' '.join(subject_formatted)
+    return subject_formatted
 
 def generate_why_dict(token, word_token):
     why_key_word = ['because']
@@ -113,7 +119,7 @@ def generate_question_modifier(sent, subject, object, verb_modifier, exception_l
     modifier_sent = sent[start:end + 1].strip()
     if modifier_sent != "":
         modifier_sent = " " + modifier_sent
-    if modifier_sent and modifier_sent[-1] == '.':
+    if modifier_sent and (modifier_sent[-1] == '.' or modifier_sent[-1] == ','):
         modifier_sent = modifier_sent[:-1]
 
     return modifier_sent
@@ -125,6 +131,7 @@ def generate_questions(document_path):
     # sentences = sentences[0:10]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
     question_set = set()
+    question_length_limit = 30
 
     for sent in sentences:
         # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
@@ -146,11 +153,16 @@ def generate_questions(document_path):
         print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, verb_modifier = entity
+            subject_formatted = format_subject(ner_dict, subject)
+            object_formatted = format_subject(ner_dict, object)
+            # if negation!="":
+            #     print(entity)
             print(entity)
             # generate question about verb
             question_tense1 = ''
             what_tense = ''
             tense = verb.tag_
+            print(tense)
             plural = subject_tag == 'NNS' or subject_tag == 'NNPS'
 
             verb_str = verb.text
@@ -158,6 +170,8 @@ def generate_questions(document_path):
             if tense == 'VBD':
                 question_tense1 = 'did'
                 verb_str = verb.lemma_
+                if subject == " ":
+                    question_tense1 = 'was'
             elif tense == 'VBG':
                 if plural:
                     question_tense1 = 'are'
@@ -165,6 +179,8 @@ def generate_questions(document_path):
                 else:
                     question_tense1 = 'is'
                     what_tense = 'is'
+                if subject == " ":
+                    question_tense1 = 'is'
             elif tense == 'VBN':
                 if plural:
                     question_tense1 = 'have'
@@ -172,12 +188,18 @@ def generate_questions(document_path):
                 else:
                     question_tense1 = 'has'
                     what_tense = 'has'
+                if subject == " ":
+                    question_tense1 = 'is'
             else:
                 if plural:
                     question_tense1 = 'do'
                 else:
                     question_tense1 = 'does'
                 verb_str = verb.lemma_
+                if subject == " ":
+                    question_tense1 = 'is'
+            if subject == " ":
+                verb_str = verb._.inflect('VBN')
 
             # generate why question
             if verb.text in why_dict:
@@ -189,9 +211,10 @@ def generate_questions(document_path):
                             exception_list.append(modifier)
                 modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, exception_list)
                 if subject != " ":
-                    q = "Why " + question_tense1 + " " + subject + " " + verb_str + ("" if object == " " else " " + object) + modifier_sent + "?"
-                    print(q)
-                    question_set.add(q)
+                    q = "Why " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                    if len(q)>=question_length_limit:
+                        print(q)
+                        question_set.add(q)
 
             # generate when question
             if verb.text in when_dict:
@@ -205,9 +228,10 @@ def generate_questions(document_path):
                 if question_status:
                     modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, exception_list)
                     if subject != " ":
-                        q = "When " + question_tense1 + " " + subject + " " + verb_str + ("" if object == " " else " " + object) + modifier_sent + "?"
-                        print(q)
-                        question_set.add(q)
+                        q = "When " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                        if len(q) >= question_length_limit:
+                            print(q)
+                            question_set.add(q)
 
             # generate where question
             if verb.text in where_dict:
@@ -221,9 +245,10 @@ def generate_questions(document_path):
                 if question_status:
                     modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, exception_list)
                     if subject != " ":
-                        q = "Where " + question_tense1 + " " + subject + " " + verb_str + ("" if object == " " else " " + object) + modifier_sent + "?"
-                        print(q)
-                        question_set.add(q)
+                        q = "Where " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                        if len(q) >= question_length_limit:
+                            print(q)
+                            question_set.add(q)
 
             modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, [])
 
@@ -241,9 +266,10 @@ def generate_questions(document_path):
                         break
 
                 q = question_type + " " + ("" if what_tense == "" else what_tense + " ") + what_verb + (
-                    "" if object == " " else " " + object) + modifier_sent + "?"
-                print(q)
-                question_set.add(q)
+                    "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                if len(q) >= question_length_limit:
+                    print(q)
+                    question_set.add(q)
 
             # generate question about object
             if object != " ":
@@ -258,10 +284,15 @@ def generate_questions(document_path):
                         question_type = "Who"
                         break
 
+
                 q_obj = question_type + " " + question_tense1 + (
-                    "" if subject == " " else " " + subject) + " " + verb_str + modifier_sent + "?"
-                print(q_obj)
-                question_set.add(q_obj)
+                    "" if subject_formatted == " " else " " + subject_formatted) + " " + verb_str + modifier_sent + "?"
+                if len(q_obj) >= question_length_limit:
+                    print(q_obj)
+                    question_set.add(q_obj)
+
+            # generate T/F questions
+
 
     # print(len(question_set))
     # print(question_set)
