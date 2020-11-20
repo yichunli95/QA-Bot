@@ -36,7 +36,7 @@ def find_verb(tok):
 def format_subject(ner_dict, subject):
     subject_formatted = subject.split(' ')
     subject_formatted[0] = subject_formatted[0].lower()
-    subject_formatted = subject if subject_formatted[0] in ner_dict.keys() else ' '.join(subject_formatted)
+    subject_formatted = subject if subject.lower() in ner_dict.keys() else ' '.join(subject_formatted)
     return subject_formatted
 
 
@@ -130,7 +130,7 @@ def generate_question_modifier(sent, subject, object, verb_modifier, exception_l
 def generate_questions(document_path):
     document = open_document(document_path)
     sentences = tokenize_sentence(document)
-    # sentences = sentences[0:10]
+    sentences = sentences[0:10]
     who_key_word = ['he', 'she', 'they', 'him', 'her', 'them', 'who']
     question_set = set()
     question_length_limit = 30
@@ -171,6 +171,7 @@ def generate_questions(document_path):
             print(entity)
             # generate question about verb
             question_tense1 = ''
+            question_tenseTF = ''
             what_tense = ''
             tense = verb.tag_
             print(tense)
@@ -181,36 +182,34 @@ def generate_questions(document_path):
             if tense == 'VBD':
                 question_tense1 = 'did'
                 verb_str = verb.lemma_
-                if subject == " ":
-                    question_tense1 = 'was'
+                question_tense_passive = 'was'
             elif tense == 'VBG':
                 if plural:
                     question_tense1 = 'are'
                     what_tense = 'are'
+                    question_tenseTF = 'are'
                 else:
                     question_tense1 = 'is'
                     what_tense = 'is'
-                if subject == " ":
-                    question_tense1 = 'is'
+                    question_tenseTF = 'is'
+                question_tense_passive = 'is'
             elif tense == 'VBN':
                 if plural:
                     question_tense1 = 'have'
                     what_tense = 'has'
+                    question_tenseTF = 'have'
                 else:
                     question_tense1 = 'has'
                     what_tense = 'has'
-                if subject == " ":
-                    question_tense1 = 'is'
+                    question_tenseTF = 'has'
+                question_tense_passive = 'is'
             else:
                 if plural:
                     question_tense1 = 'do'
                 else:
                     question_tense1 = 'does'
                 verb_str = verb.lemma_
-                if subject == " ":
-                    question_tense1 = 'is'
-            if subject == " ":
-                verb_str = verb._.inflect('VBN')
+                question_tense_passive = 'is'
 
             # generate why question
             if verb.text in why_dict:
@@ -295,13 +294,39 @@ def generate_questions(document_path):
                         question_type = "Who"
                         break
 
-                q_obj = question_type + " " + question_tense1 + (
-                    "" if subject_formatted == " " else " " + subject_formatted) + " " + verb_str + modifier_sent + "?"
+                if subject != " ":
+                    q_obj = question_type + " " + question_tense1 + (
+                        "" if subject_formatted == " " else " " + subject_formatted) + " " + verb_str + modifier_sent + "?"
+                else:
+                    q_obj = question_type + " " + question_tense_passive + " " + verb._.inflect('VBN') + modifier_sent + "?"
                 if len(q_obj) >= question_length_limit:
                     print(q_obj)
                     question_set.add(q_obj)
 
             # generate T/F questions
+            if subject != " ":
+                q = "Is it true that " + subject_formatted + ("" if question_tenseTF == "" else " " + question_tenseTF) + " " + verb.text + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                if len(q) >= question_length_limit:
+                    print(q)
+                    question_set.add(q)
+
+                q = question_tense1[0].upper()+question_tense1[1:] + " " + subject_formatted + " " + verb_str + (
+                        "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                if len(q) >= question_length_limit:
+                    print(q)
+                    question_set.add(q)
+
+            if object != " ":
+                q = "Is it true that " + object_formatted + ("" if question_tense_passive == "" else " " + question_tense_passive) + " " + verb._.inflect('VBN') + ("" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
+                if len(q) >= question_length_limit:
+                    print(q)
+                    question_set.add(q)
+
+                q = question_tense_passive[0].upper()+question_tense_passive[1:] + " " + object_formatted + " " + verb._.inflect('VBN') + (
+                        "" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
+                if len(q) >= question_length_limit:
+                    print(q)
+                    question_set.add(q)
 
 
     # print(len(question_set))
