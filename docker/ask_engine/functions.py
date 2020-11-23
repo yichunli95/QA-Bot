@@ -154,7 +154,7 @@ def generate_questions(document_path):
         # print("svo:", result)
         print("Questions:")
         for entity in result:
-            subject, subject_tag, negation, verb, object, verb_modifier = entity
+            subject, subject_tag, negation, verb, object, object_tag, verb_modifier = entity
             if subject != " ":
                 subject = subject.strip()
                 if subject[-1] == '.' or subject[-1] == ',':
@@ -176,13 +176,17 @@ def generate_questions(document_path):
             tense = verb.tag_
             print(tense)
             plural = subject_tag == 'NNS' or subject_tag == 'NNPS'
+            object_plural = object_tag == 'NNS' or object_tag == 'NNPS'
 
             verb_str = verb.text
             what_verb = verb.text
             if tense == 'VBD':
                 question_tense1 = 'did'
                 verb_str = verb.lemma_
-                question_tense_passive = 'was'
+                if object_plural:
+                    question_tense_passive = 'were'
+                else:
+                    question_tense_passive = 'was'
             elif tense == 'VBG':
                 if plural:
                     question_tense1 = 'are'
@@ -192,7 +196,10 @@ def generate_questions(document_path):
                     question_tense1 = 'is'
                     what_tense = 'is'
                     question_tenseTF = 'is'
-                question_tense_passive = 'is'
+                if object_plural:
+                    question_tense_passive = 'are'
+                else:
+                    question_tense_passive = 'is'
             elif tense == 'VBN':
                 if plural:
                     question_tense1 = 'have'
@@ -202,14 +209,20 @@ def generate_questions(document_path):
                     question_tense1 = 'has'
                     what_tense = 'has'
                     question_tenseTF = 'has'
-                question_tense_passive = 'is'
+                if object_plural:
+                    question_tense_passive = 'are'
+                else:
+                    question_tense_passive = 'is'
             else:
                 if plural:
                     question_tense1 = 'do'
                 else:
                     question_tense1 = 'does'
                 verb_str = verb.lemma_
-                question_tense_passive = 'is'
+                if object_plural:
+                    question_tense_passive = 'are'
+                else:
+                    question_tense_passive = 'is'
 
             # generate why question
             if verb.text in why_dict:

@@ -324,17 +324,17 @@ def findSVOs(tokens):
                         if is_pas:  # reverse object / subject for passive
                             svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, subject, get_modifier(v, visited) + get_modifier(v2, visited)))
+                                         v, subject, subject_tag, get_modifier(v, visited) + get_modifier(v2, visited)))
                             svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v2, subject, get_modifier(v, visited) + get_modifier(v2, visited)))
+                                         v2, subject, subject_tag, get_modifier(v, visited) + get_modifier(v2, visited)))
                         else:
                             svos.append((subject, subject_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, object, get_modifier(v, visited) + get_modifier(v2, visited)))
+                                         v, object, object_tag, get_modifier(v, visited) + get_modifier(v2, visited)))
                             svos.append((subject, subject_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v2, object, get_modifier(v, visited) + get_modifier(v2, visited)))
+                                         v2, object, object_tag, get_modifier(v, visited) + get_modifier(v2, visited)))
             else:
                 v, objs = _get_all_objs(v, is_pas)
                 for sub in subs:
@@ -360,9 +360,9 @@ def findSVOs(tokens):
                         if is_pas:  # reverse object / subject for passive
                             svos.append((object, object_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, subject, get_modifier(v, visited)))
+                                         v, subject, subject_tag, get_modifier(v, visited)))
                         else:
                             svos.append((subject, subject_tag,
                                          "not" if verbNegated or objNegated else "",
-                                         v, object, get_modifier(v, visited)))
+                                         v, object, object_tag, get_modifier(v, visited)))
     return svos
