@@ -36,7 +36,10 @@ def find_verb(tok):
 def format_subject(ner_dict, subject):
     subject_formatted = subject.split(' ')
     subject_formatted[0] = subject_formatted[0].lower()
-    subject_formatted = subject if subject.lower() in ner_dict.keys() else ' '.join(subject_formatted)
+    if subject.lower() in ner_dict.keys() or subject_formatted[0] in ner_dict.keys():
+        subject_formatted = subject
+    else:
+        subject_formatted = ' '.join(subject_formatted)
     return subject_formatted
 
 
