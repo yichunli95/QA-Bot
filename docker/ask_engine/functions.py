@@ -138,7 +138,7 @@ def generate_questions(document_path):
     for sent in sentences:
         # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
         token = svo.nlp(sent)
-        print("Sentence: ", token)
+        #print("Sentence: ", token)
         word_token = [tok.lower_ for tok in token]
         # index = word_token.index("with")
         # print(token[index].pos_, token[index].dep_)
@@ -152,7 +152,7 @@ def generate_questions(document_path):
 
         result = svo.findSVOs(token)
         # print("svo:", result)
-        print("Questions:")
+        #print("Questions:")
         for entity in result:
             subject, subject_tag, negation, verb, object, object_tag, verb_modifier = entity
             if subject != " ":
@@ -168,13 +168,13 @@ def generate_questions(document_path):
             object_formatted = format_subject(ner_dict, object)
             # if negation!="":
             #     print(entity)
-            print(entity)
+            #print(entity)
             # generate question about verb
             question_tense1 = ''
             question_tenseTF = ''
             what_tense = ''
             tense = verb.tag_
-            print(tense)
+            #print(tense)
             plural = subject_tag == 'NNS' or subject_tag == 'NNPS'
             object_plural = object_tag == 'NNS' or object_tag == 'NNPS'
 
@@ -236,7 +236,7 @@ def generate_questions(document_path):
                 if subject != " ":
                     q = "Why " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
                     if len(q) >= question_length_limit:
-                        print(q)
+                        #print(q)
                         question_set.add(q)
 
             # generate when question
@@ -253,7 +253,7 @@ def generate_questions(document_path):
                     if subject != " ":
                         q = "When " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
                         if len(q) >= question_length_limit:
-                            print(q)
+                            #print(q)
                             question_set.add(q)
 
             # generate where question
@@ -270,7 +270,7 @@ def generate_questions(document_path):
                     if subject != " ":
                         q = "Where " + question_tense1 + " " + subject_formatted + " " + verb_str + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
                         if len(q) >= question_length_limit:
-                            print(q)
+                            #print(q)
                             question_set.add(q)
 
             modifier_sent = generate_question_modifier(sent, subject, object, verb_modifier, [])
@@ -313,32 +313,32 @@ def generate_questions(document_path):
                 else:
                     q_obj = question_type + " " + question_tense_passive + " " + verb._.inflect('VBN') + modifier_sent + "?"
                 if len(q_obj) >= question_length_limit:
-                    print(q_obj)
+                    #print(q_obj)
                     question_set.add(q_obj)
 
             # generate T/F questions
             if subject != " ":
                 q = "Is it true that " + subject_formatted + ("" if question_tenseTF == "" else " " + question_tenseTF) + " " + verb.text + ("" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
                 if len(q) >= question_length_limit:
-                    print(q)
+                    #print(q)
                     question_set.add(q)
 
                 q = question_tense1[0].upper()+question_tense1[1:] + " " + subject_formatted + " " + verb_str + (
                         "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
                 if len(q) >= question_length_limit:
-                    print(q)
+                    #print(q)
                     question_set.add(q)
 
             if object != " ":
                 q = "Is it true that " + object_formatted + ("" if question_tense_passive == "" else " " + question_tense_passive) + " " + verb._.inflect('VBN') + ("" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
                 if len(q) >= question_length_limit:
-                    print(q)
+                    #print(q)
                     question_set.add(q)
 
                 q = question_tense_passive[0].upper()+question_tense_passive[1:] + " " + object_formatted + " " + verb._.inflect('VBN') + (
                         "" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
                 if len(q) >= question_length_limit:
-                    print(q)
+                    #print(q)
                     question_set.add(q)
 
 

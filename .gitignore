@@ -13,5 +13,9 @@ data/
 docker/__pycache__
 docker/ans_engine/__pycache__
 docker/ask_engine/__pycache__
+docker/ans_engine/boolean_model/
+docker/ans_engine/wh_model/
 docker/encoder/
 docker/GloVe/
+Development_data/
+noun_counting_data/

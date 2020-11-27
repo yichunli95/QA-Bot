@@ -21,6 +21,7 @@ RUN pip3 install nltk
 RUN mkdir /QA
 RUN pip3 install transformers
 RUN pip3 install rank_bm25
+RUN pip3 install pyinflect
 RUN mkdir /QA/GloVe
 RUN mkdir /QA/encoder
 ADD GloVe /QA/GloVe
