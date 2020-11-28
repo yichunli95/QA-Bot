@@ -141,7 +141,9 @@ def generate_questions(document_path):
     question_set_what = set()
     question_set_who = set()
     question_set_TF = set()
+    question_set_TF_IS_IT_TRUE = set()
     question_set_TF_passive = set()
+    question_set_TF_passive_IS_IT_TRUE = set()
     question_length_limit = 50
     debug_printing = False
 
@@ -355,7 +357,7 @@ def generate_questions(document_path):
                 if len(q) >= question_length_limit:
                     if debug_printing:
                         print(q)
-                    question_set_TF.add(q)
+                    question_set_TF_IS_IT_TRUE.add(q)
 
                 q = question_tense1[0].upper()+question_tense1[1:] + " " + subject_formatted + " " + verb_str + (
                         "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
@@ -370,7 +372,7 @@ def generate_questions(document_path):
                     if len(q) >= question_length_limit:
                         if debug_printing:
                             print(q)
-                        question_set_TF_passive.add(q)
+                        question_set_TF_passive_IS_IT_TRUE.add(q)
 
                     q = question_tense_passive[0].upper()+question_tense_passive[1:] + " " + object_formatted + " " + verb._.inflect('VBN').lower() + (
                             "" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
@@ -380,7 +382,7 @@ def generate_questions(document_path):
                         question_set_TF_passive.add(q)
 
 
-    return question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF_passive, question_set_TF
+    return question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF, question_set_TF_IS_IT_TRUE, question_set_TF_passive, question_set_TF_passive_IS_IT_TRUE
 
 
 if __name__ == '__main__':
@@ -390,5 +392,5 @@ if __name__ == '__main__':
     for s in range(1, 6):
         for a in range(1, 11):
             document_path = f"../data/set{s}/a{a}.txt"
-            question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF_passive, question_set_TF = generate_questions(document_path)
+            question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF, question_set_TF_IS_IT_TRUE, question_set_TF_passive, question_set_TF_passive_IS_IT_TRUE  = generate_questions(document_path)
             print(random.sample(question_set_what, 1), s, a)
