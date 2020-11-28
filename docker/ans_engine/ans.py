@@ -12,16 +12,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn import preprocessing
 from rank_bm25 import BM25Okapi
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForSequenceClassification
 import warnings
-# def open_document(file_path):
-#     with io.open(file_path, 'r', encoding='utf8') as f:
-#         document = f.read()
-#     document = re.sub('[\n]+', ' . ', document)
-#     return document
+import spacy
+
 
 def answer(input_file, question_file):
     # Initialize Model
+    cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if cuda else "cpu")
+
     warnings.filterwarnings("ignore", category=UserWarning)
     V = 1
     MODEL_PATH = 'encoder/infersent%s.pkl' % V
@@ -33,19 +33,15 @@ def answer(input_file, question_file):
 
     infersent.set_w2v_path("GloVe/glove.840B.300d.txt")
 
-    # Load pre-trained, fine-tuned models
-    #print("p a")
-    #tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
-    #model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
     # path relative to the answer program (not sure why tho)
     # large model (need Gb+ memory during runtime)
-    tokenizer = AutoTokenizer.from_pretrained("./ans_engine/bert_large_model")
-    model = AutoModelForQuestionAnswering.from_pretrained("./ans_engine/bert_large_model")
+    wh_tokenizer = AutoTokenizer.from_pretrained("./ans_engine/wh_model")
+    wh_model = AutoModelForQuestionAnswering.from_pretrained("./ans_engine/wh_model")
 
-    # small model 
-    # tokenizer = AutoTokenizer.from_pretrained("./ans_engine/bert_small_model")
-    # model = AutoModelForQuestionAnswering.from_pretrained("./ans_engine/bert_small_model")
+    boolean_tokenizer = AutoTokenizer.from_pretrained("./ans_engine/boolean_model")
+    boolean_model = AutoModelForSequenceClassification.from_pretrained("./ans_engine/boolean_model")
+
     sentence_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
     # load test file
@@ -61,16 +57,10 @@ def answer(input_file, question_file):
 
     with open(question_file,'r') as f:
         questions = f.readlines()
-    # questions = open_document(question_file)
-    #print(questions)
     sentences_embedding = infersent.encode(sentences, tokenize = True)
     tokenized_sentences = [s.split(" ") for s in sentences]
     bm25 = BM25Okapi(tokenized_sentences)
 
-
-    # Answer questions
-    #answers = []
-    #print(questions)
     for question in questions:
         question_embedding = infersent.encode([question],tokenize = True)[0]
         tokenized_question = question.split(" ")
@@ -89,9 +79,9 @@ def answer(input_file, question_file):
             score[idx] = (bm_scores[idx], infersent_scores[idx])
 
         score = {k: v for k, v in sorted(score.items(), reverse=True, key=lambda item: item[1][0]+item[1][1])}
-        #print('*'*100)
-        #print(score)
-        #print('Question:\n', question)
+        # print('*'*100)
+        # print(score)
+        # print('Question:\n', question)
         context = ''
         for ct, k in enumerate(score.keys()):
             if ct == 3: #choose top ct candidate answer-sentences
@@ -101,21 +91,143 @@ def answer(input_file, question_file):
             # print(sentences[k])
         #print('Context:\n', context)
 
-        #inputs = tokenizer.encode_plus(question, context, return_tensors="pt").to(args.device)
-        inputs = tokenizer.encode_plus(question, context, return_tensors="pt")
-        for k in inputs:
-            inputs[k] = torch.unsqueeze(inputs[k][0][:512],0)
 
-        answer_start_scores, answer_end_scores = model(**inputs)
-        answer_starts = torch.argsort(answer_start_scores, descending=True)[0][0:5]
-        answer_ends = torch.argsort(answer_end_scores, descending=True)[0][0:5]
+        if is_binary_question(question):
+            sequence = boolean_tokenizer.encode_plus(question, context, return_tensors="pt")['input_ids'].to(device)
+            logits = boolean_model(sequence)[0]
+            probabilities = torch.softmax(logits, dim=1).detach().cpu().tolist()[0]
+            proba_yes = round(probabilities[1], 2)
+            proba_no = round(probabilities[0], 2)
+            if proba_yes >= proba_no:
+                print("Yes")
+            else:
+                print("No")
+            #print(f"Yes: {proba_yes}", f"No: {proba_no}")
+        else:
+            inputs = wh_tokenizer.encode_plus(question, context, return_tensors="pt").to(device)
+            for k in inputs:
+                inputs[k] = torch.unsqueeze(inputs[k][0][:512],0)
+            answer_start_scores, answer_end_scores = wh_model(**inputs)
+            answer_starts = torch.argsort(answer_start_scores, descending=True)[0][0:5]
+            answer_ends = torch.argsort(answer_end_scores, descending=True)[0][0:5]
 
-        #print('Answer(s):')
+            #print('Answer(s):')
+            for i in range(len(answer_starts)):
+                if i == 1:
+                    break
+                answer_start = answer_starts[i]
+                answer_end = answer_ends[i] + 1  
+                print(wh_tokenizer.convert_tokens_to_string(wh_tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])))
 
-        for i in range(len(answer_starts)):
-            if i == 1:
+    # # Answer questions
+    # for question in questions:
+    #     if is_binary_question(question):
+
+    #     else:
+    #         question_embedding = infersent.encode([question],tokenize = True)[0]
+    #         tokenized_question = question.split(" ")
+    #         # BM25 scores
+    #         bm_scores = preprocessing.normalize(bm25.get_scores(tokenized_question).reshape(1,-1), norm = 'l1')[0]
+    #         # print(bm_scores)
+
+    #         # Infersent mathcing scores
+    #         infersent_scores = []
+    #         for idx,s in enumerate(sentences_embedding):
+    #             infersent_scores.append(cosine_similarity(question_embedding.reshape(1,-1), s.reshape(1,-1))[0][0])
+    #         infersent_scores = preprocessing.normalize(np.array(infersent_scores).reshape(1,-1), norm = 'l1')[0]
+    #         # print(infersent_scores)
+
+    #         for idx in range(len(bm_scores)):
+    #             score[idx] = (bm_scores[idx], infersent_scores[idx])
+
+    #         score = {k: v for k, v in sorted(score.items(), reverse=True, key=lambda item: item[1][0]+item[1][1])}
+    #         #print('*'*100)
+    #         #print(score)
+    #         #print('Question:\n', question)
+    #         context = ''
+    #         for ct, k in enumerate(score.keys()):
+    #             if ct == 3: #choose top ct candidate answer-sentences
+    #                 break
+    #             context += sentences[k]
+    #             # print('*'*100)
+    #             # print(sentences[k])
+    #         #print('Context:\n', context)
+
+    #         #inputs = tokenizer.encode_plus(question, context, return_tensors="pt").to(args.device)
+    #         inputs = tokenizer.encode_plus(question, context, return_tensors="pt")
+    #         for k in inputs:
+    #             inputs[k] = torch.unsqueeze(inputs[k][0][:512],0)
+
+    #         answer_start_scores, answer_end_scores = model(**inputs)
+    #         answer_starts = torch.argsort(answer_start_scores, descending=True)[0][0:5]
+    #         answer_ends = torch.argsort(answer_end_scores, descending=True)[0][0:5]
+
+    #         #print('Answer(s):')
+
+    #         for i in range(len(answer_starts)):
+    #             if i == 1:
+    #                 break
+    #             answer_start = answer_starts[i]
+    #             answer_end = answer_ends[i] + 1  
+    #             #print("======")
+    #             print(tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])))
+
+
+
+
+
+
+
+
+# funcs for determining whether a question is boolean or not
+def find_root(sent, return_idx = True):
+    for idx,word in enumerate(sent):
+        if word.head == word:
+            if return_idx:
+                return word, idx
+            else:
+                return word
+
+def is_binary_question(question):
+    wh = {'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'whose'}
+    tf = {'is','are','do','does','was','were','did','have','has','would','will', 'whether','should','must', 'can', 'could', 'would', 'shall'}
+    # Segment question sentence into clause(s)
+    nlp = spacy.load("en_core_web_sm")
+    sent = nlp(question)
+    
+    # displacy.render(sent, style='dep', jupyter=True, options={'distance': 90})
+    if ',' in sent.text:
+        root, root_idx = find_root(sent)
+        # print('root:',root, root_idx)
+        l = root_idx - 1
+        r = root_idx + 1
+        while l >= 0:
+            if sent[l].text == ',':
+                l += 1
                 break
-            answer_start = answer_starts[i]
-            answer_end = answer_ends[i] + 1  
-            #print("======")
-            print(tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])))
+            l -= 1
+        while r < len(sent):
+            if sent[r].text == ',':
+                break
+            r += 1
+        sent = list(sent.__iter__())[l:r]
+    
+    ct = 1
+    wh_idx = None
+    tf_idx = None
+    for word in sent:
+        if word.text.lower() in wh and not wh_idx:
+            wh_idx = ct
+        if ((word.text.lower() in tf) or word.dep_ == 'aux') and not tf_idx:
+            tf_idx = ct
+        ct += 1
+
+    if tf_idx and not wh_idx:
+        return True
+    if not tf_idx and wh_idx:
+        return False
+    if tf_idx and wh_idx:
+        if tf_idx < wh_idx:
+            return True
+        else:
+            return False

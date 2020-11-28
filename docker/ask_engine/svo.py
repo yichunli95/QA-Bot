@@ -51,25 +51,6 @@ def _get_objs_from_conjunctions(objs):
     return more_objs
 
 
-# find sub dependencies
-def _find_subs(tok):
-    return [], False
-    # head = tok.head
-    # while head.pos_ != "VERB" and head.pos_ != "NOUN" and head.head != head:
-    #     head = head.head
-    # if head.pos_ == "VERB":
-    #     subs = [tok for tok in head.lefts if tok.dep_ == "SUB"]
-    #     if len(subs) > 0:
-    #         verb_negated = _is_negated(head)
-    #         subs.extend(_get_subs_from_conjunctions(subs))
-    #         return subs, verb_negated
-    #     elif head.head != head:
-    #         return _find_subs(head)
-    # elif head.pos_ == "NOUN":
-    #     return [head], _is_negated(tok)
-    # return [], False
-
-
 # is the tok set's left or right negated?
 def _is_negated(tok):
     parts = list(tok.lefts) + list(tok.rights)
@@ -91,39 +72,12 @@ def _find_svs(tokens):
     return svs
 
 
-# get grammatical objects for a given set of dependencies (including passive sentences)
-def _get_objs_from_prepositions(deps, is_pas):
-    objs = []
-    for dep in deps:
-        if dep.pos_ == "ADP" and (dep.dep_ == "prep" or (is_pas and dep.dep_ == "agent")):
-            objs.extend([tok for tok in dep.rights if tok.dep_  in OBJECTS or
-                         (tok.pos_ == "PRON" and tok.lower_ == "me") or
-                         (is_pas and tok.dep_ == 'pobj')])
-    return objs
-
-
-# xcomp; open complement - verb has no suject
-def _get_obj_from_xcomp(deps, is_pas):
-    for dep in deps:
-        if dep.pos_ == "VERB" and dep.dep_ == "xcomp":
-            v = dep
-            rights = list(v.rights)
-            objs = [tok for tok in rights if tok.dep_ in OBJECTS]
-            objs.extend(_get_objs_from_prepositions(rights, is_pas))
-            if len(objs) > 0:
-                return v, objs
-    return None, None
-
-
 # get all functional subjects adjacent to the verb passed in
 def _get_all_subs(v):
     verb_negated = _is_negated(v)
     subs = [tok for tok in v.lefts if tok.dep_ in SUBJECTS and tok.pos_ != "DET"]
     if len(subs) > 0:
         subs.extend(_get_subs_from_conjunctions(subs))
-    else:
-        foundSubs, verb_negated = _find_subs(v)
-        subs.extend(foundSubs)
     if len(subs) == 0:
         subs.append(' ')
     return subs, verb_negated
@@ -155,12 +109,7 @@ def _get_all_objs(v, is_pas):
     rights = list(v.rights)
 
     objs = [tok for tok in rights if tok.dep_ in OBJECTS or (is_pas and tok.dep_ == 'pobj')]
-    # objs.extend(_get_objs_from_prepositions(rights, is_pas))
 
-    # potential_new_verb, potential_new_objs = _get_obj_from_xcomp(rights, is_pas)
-    # if potential_new_verb is not None and potential_new_objs is not None and len(potential_new_objs) > 0:
-    #     objs.extend(potential_new_objs)
-    #     v = potential_new_verb
     if len(objs) > 0:
         objs.extend(_get_objs_from_conjunctions(objs))
     if len(objs) == 0:
@@ -183,20 +132,6 @@ def _get_that_resolution(item, toks):
         if 'that' in [t.orth_ for t in tok.lefts]:
             return tok.head
     return item
-
-
-# simple stemmer using lemmas
-def _get_lemma(word: str):
-    tokens = nlp(word)
-    if len(tokens) == 1:
-        return tokens[0].lemma_
-    return word
-
-
-# print information for displaying all kinds of things of the parse tree
-def printDeps(toks):
-    for tok in toks:
-        print(tok.orth_, tok.dep_, tok.pos_, tok.head.orth_, [t.orth_ for t in tok.lefts], [t.orth_ for t in tok.rights])
 
 
 # expand an obj / subj np using its chunk
@@ -245,12 +180,6 @@ def get_modifier(tok, visited):
         if e.dep_ in verb_modifier:
             modifier.append(to_str(expand_modifier(e)))
         elif e.dep_ == "prep":
-            # expand_status = True
-            # for e_children in e.rights:
-            #     if e_children.i in visited:
-            #         expand_status = False
-            #         break
-            # if expand_status:
             modifier.append(to_str(expand_modifier(e)))
         elif e.pos_ == "VERB":
             expand_status = False
