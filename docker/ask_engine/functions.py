@@ -33,10 +33,10 @@ def find_verb(tok):
     return head
 
 
-def format_subject(ner_dict, subject):
+def format_subject(ner_dict, sent, subject):
     subject_formatted = subject.split(' ')
     subject_formatted[0] = subject_formatted[0].lower()
-    if subject.lower() in ner_dict.keys() or subject_formatted[0] in ner_dict.keys():
+    if (subject.lower() in ner_dict.keys() or subject_formatted[0] in ner_dict.keys()) or sent.find(subject.split(' ')[0])!=0:
         subject_formatted = subject
     else:
         subject_formatted = ' '.join(subject_formatted)
@@ -149,6 +149,7 @@ def generate_questions(document_path):
 
     for sent in sentences:
         # sent = "A study showed that of the 58 people who were present when the tomb and sarcophagus were opened, only eight died within a dozen years."
+        # sent = 'Known as the Sleeping Pokémon, Snorlax has been said to weigh over 1,000 pounds and until Generation III was considered the heaviest known Pokémon.'
         token = svo.nlp(sent)
         if debug_printing:
             print("Sentence: ", token)
@@ -170,11 +171,18 @@ def generate_questions(document_path):
         for entity in result:
             subject, subject_tag, negation, verb, object, object_tag, verb_modifier = entity
             #to remove questions about pronouns
-            if subject_tag == 'PRP' or object_tag == 'PRP':
+            if subject_tag == 'PRP' or object_tag == 'PRP' or subject_tag == 'PRP$' or object_tag == 'PRP$':
                 continue
             #remove questions with subject starting with 'to'
             if subject.find('to') == 0 or subject.find('To') == 0:
                 continue
+
+            if subject.find('who')==0 or subject.find('which')==0 or subject.find('that')==0 or object.find('who')==0 or object.find('which')==0 or object.find('that')==0:
+                continue
+
+            if subject_tag not in ['NN','NNS','NNP','NNPS','default'] or object_tag not in ['NN','NNS','NNP','NNPS','default']:
+                continue
+
 
             if subject != " ":
                 subject = subject.strip()
@@ -185,8 +193,8 @@ def generate_questions(document_path):
                 if object[-1] == '.' or object[-1] == ',':
                     object = object[:-1]
 
-            subject_formatted = format_subject(ner_dict, subject)
-            object_formatted = format_subject(ner_dict, object)
+            subject_formatted = format_subject(ner_dict, sent, subject)
+            object_formatted = format_subject(ner_dict, sent, object)
             # if negation!="":
             #     print(entity)
             if debug_printing:
@@ -313,16 +321,16 @@ def generate_questions(document_path):
                     if subject.lower() == key:
                         question_type = "Who"
                         break
-
-                q = question_type + " " + ("" if what_tense == "" else what_tense + " ") + what_verb + (
-                    "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
-                if len(q) >= question_length_limit:
-                    if debug_printing:
-                        print(q)
-                    if question_type == 'Who':
-                        question_set_who.add(q)
-                    else:
-                        question_set_what.add(q)
+                if object != " ":
+                    q = question_type + " " + ("" if what_tense == "" else what_tense + " ") + what_verb + (
+                        "" if object_formatted == " " else " " + object_formatted) + modifier_sent + "?"
+                    if len(q) >= question_length_limit:
+                        if debug_printing:
+                            print(q)
+                        if question_type == 'Who':
+                            question_set_who.add(q)
+                        else:
+                            question_set_what.add(q)
 
             # generate question about object
             if object != " ":
@@ -340,16 +348,16 @@ def generate_questions(document_path):
                 if subject != " ":
                     q = question_type + " " + question_tense1 + (
                         "" if subject_formatted == " " else " " + subject_formatted) + " " + verb_str + modifier_sent + "?"
-                else:
-                    if verb._.inflect('VBN'):
-                        q = question_type + " " + question_tense_passive + " " + verb._.inflect('VBN').lower() + modifier_sent + "?"
-                if len(q) >= question_length_limit:
-                    if debug_printing:
-                        print(q)
-                    if question_type == 'Who':
-                        question_set_who.add(q)
-                    else:
-                        question_set_what.add(q)
+                # else:
+                #     if verb._.inflect('VBN'):
+                #         q = question_type + " " + question_tense_passive + " " + verb._.inflect('VBN').lower() + modifier_sent + "?"
+                    if len(q) >= question_length_limit:
+                        if debug_printing:
+                            print(q)
+                        if question_type == 'Who':
+                            question_set_who.add(q)
+                        else:
+                            question_set_what.add(q)
 
             # generate T/F questions
             if subject != " ":
