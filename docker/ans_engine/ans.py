@@ -83,13 +83,15 @@ def answer(input_file, question_file):
         # print(score)
         # print('Question:\n', question)
         context = ''
-        for ct, k in enumerate(score.keys()):
-            if ct == 3: #choose top ct candidate answer-sentences
-                break
+        for ct, k in enumerate(sorted(list(score.keys())[0:4])):
             context += sentences[k]
-            # print('*'*100)
-            # print(sentences[k])
-        #print('Context:\n', context)
+        # for ct, k in enumerate(score.keys()):
+        #     if ct == 3: #choose top ct candidate answer-sentences
+        #         break
+        #     context += sentences[k]
+        #     # print('*'*100)
+        #     # print(sentences[k])
+        # #print('Context:\n', context)
 
 
         if is_binary_question(question):
@@ -124,8 +126,10 @@ def answer(input_file, question_file):
                 answer_start = answer_starts[i]
                 answer_end = answer_ends[i] + 1  
                 answer = wh_tokenizer.convert_tokens_to_string(wh_tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end]))
-                answer = answer.capitalize() + "."
-                print(answer)
+                candidates = answer.split(" ")
+                candidates[0] = candidates[0].capitalize()
+                final = " ".join(candidates) + "."
+                print(final)
 
 
 

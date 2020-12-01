@@ -1,6 +1,7 @@
 SHARE=$(pwd)
 IMAGE=$1
 NAME=$(sudo docker run -d -v ${SHARE}:/host/Users -it ${IMAGE} /bin/bash)
+#NAME=$(sudo docker run -d -v ${SHARE}:/host/Users -it --rm --gpus all ${IMAGE} /bin/bash)
 # sudo docker exec -it $NAME ./ask /host/Users/Development_data/set1/a1.txt 5 | tee tests/ddset1a1.txt
 # echo '****************'
 # sudo docker exec -it $NAME ./answer /host/Users/Development_data/set1/a1.txt /host/Users/tests/ddset1a1.txt
