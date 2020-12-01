@@ -101,9 +101,9 @@ def answer(input_file, question_file):
             proba_yes = round(probabilities[1], 2)
             proba_no = round(probabilities[0], 2)
             if proba_yes >= proba_no:
-                print("Yes")
+                print("Yes.")
             else:
-                print("No")
+                print("No.")
             #print(f"Yes: {proba_yes}", f"No: {proba_no}")
         else:
             inputs = wh_tokenizer.encode_plus(question, context, return_tensors="pt").to(device)
@@ -123,61 +123,9 @@ def answer(input_file, question_file):
                     break
                 answer_start = answer_starts[i]
                 answer_end = answer_ends[i] + 1  
-                print(wh_tokenizer.convert_tokens_to_string(wh_tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])))
-
-    # # Answer questions
-    # for question in questions:
-    #     if is_binary_question(question):
-
-    #     else:
-    #         question_embedding = infersent.encode([question],tokenize = True)[0]
-    #         tokenized_question = question.split(" ")
-    #         # BM25 scores
-    #         bm_scores = preprocessing.normalize(bm25.get_scores(tokenized_question).reshape(1,-1), norm = 'l1')[0]
-    #         # print(bm_scores)
-
-    #         # Infersent mathcing scores
-    #         infersent_scores = []
-    #         for idx,s in enumerate(sentences_embedding):
-    #             infersent_scores.append(cosine_similarity(question_embedding.reshape(1,-1), s.reshape(1,-1))[0][0])
-    #         infersent_scores = preprocessing.normalize(np.array(infersent_scores).reshape(1,-1), norm = 'l1')[0]
-    #         # print(infersent_scores)
-
-    #         for idx in range(len(bm_scores)):
-    #             score[idx] = (bm_scores[idx], infersent_scores[idx])
-
-    #         score = {k: v for k, v in sorted(score.items(), reverse=True, key=lambda item: item[1][0]+item[1][1])}
-    #         #print('*'*100)
-    #         #print(score)
-    #         #print('Question:\n', question)
-    #         context = ''
-    #         for ct, k in enumerate(score.keys()):
-    #             if ct == 3: #choose top ct candidate answer-sentences
-    #                 break
-    #             context += sentences[k]
-    #             # print('*'*100)
-    #             # print(sentences[k])
-    #         #print('Context:\n', context)
-
-    #         #inputs = tokenizer.encode_plus(question, context, return_tensors="pt").to(args.device)
-    #         inputs = tokenizer.encode_plus(question, context, return_tensors="pt")
-    #         for k in inputs:
-    #             inputs[k] = torch.unsqueeze(inputs[k][0][:512],0)
-
-    #         answer_start_scores, answer_end_scores = model(**inputs)
-    #         answer_starts = torch.argsort(answer_start_scores, descending=True)[0][0:5]
-    #         answer_ends = torch.argsort(answer_end_scores, descending=True)[0][0:5]
-
-    #         #print('Answer(s):')
-
-    #         for i in range(len(answer_starts)):
-    #             if i == 1:
-    #                 break
-    #             answer_start = answer_starts[i]
-    #             answer_end = answer_ends[i] + 1  
-    #             #print("======")
-    #             print(tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])))
-
+                answer = wh_tokenizer.convert_tokens_to_string(wh_tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end]))
+                answer = answer.capitalize() + "."
+                print(answer)
 
 
 
@@ -205,9 +153,9 @@ def is_binary_question(question):
     if ',' in sent.text:
         root, root_idx = find_root(sent)
         # print('root:',root, root_idx)
-        l = root_idx - 1
-        r = root_idx + 1
-        while l >= 0:
+        l = max(root_idx - 1, 0)
+        r = min(root_idx + 1, len(sent))
+        while l > 0:
             if sent[l].text == ',':
                 l += 1
                 break

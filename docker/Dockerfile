@@ -41,6 +41,7 @@ RUN pip3 install --upgrade pip
 RUN pip3 install numpy
 RUN pip3 install spacy
 RUN python3 -m spacy download en_core_web_sm
+RUN python3 -m spacy download en_core_web_lg
 RUN pip3 install nltk
 RUN python3 -m nltk.downloader punkt
 
