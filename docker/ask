@@ -31,7 +31,6 @@ if __name__ == "__main__":
 				question_list.extend(random.sample(question_set, len(question_set)))
 	while len(question_list) < N:
 		question_list.extend(random.choices(list(question_sets[3]), k = N - len(question_list)))
-		question_list = list(set(question_list))
 
 	random.shuffle(question_list)
 	for i in range(N):
