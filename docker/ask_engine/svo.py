@@ -12,7 +12,7 @@ BREAKER_POS = {"CCONJ"}
 # words that are negations
 NEGATIONS = {"no", "not", "n't", "never", "none"}
 verb_modifier = {"advcl", "prepc", "purpcl"}
-nlp = spacy.load('en_core_web_sm')
+nlp = spacy.load('en_core_web_lg')
 
 
 def contains_conj(depSet):

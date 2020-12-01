@@ -10,32 +10,32 @@ if __name__ == "__main__":
 	input_file = sys.argv[1]
 	N = int(sys.argv[2])
 
-	# for s in range(1, 6):
-	# 	for a in range(1, 11):
-	# 		input_file = f"../../data/set{s}/a{a}.txt"
-	question_sets = functions.generate_questions(input_file)
-	question_list = None
-	len_not_none_sets = len([question_set for question_set in question_sets if question_set is not None])
-	for i, question_set in enumerate(question_sets):
-		if not question_set:
-			continue
-		if not question_list or len(question_list)==0:
-			if N//len_not_none_sets+1 <= len(question_set):
-				question_list = random.sample(question_set, N//len_not_none_sets+1)
-			else:
-				question_list = random.sample(question_set, len(question_set))
-		else:
-			if N//len_not_none_sets+1 <= len(question_set):
-				question_list.extend(random.sample(question_set, N//len_not_none_sets+1))
-			else:
-				question_list.extend(random.sample(question_set, len(question_set)))
-	while len(question_list) < N:
-		question_list.extend(random.choices(list(question_sets[3]), k = N - len(question_list)))
+	for s in range(1, 6):
+		for a in range(1, 11):
+			input_file = f"../../data/set{s}/a{a}.txt"
+			question_sets = functions.generate_questions(input_file)
+			question_list = None
+			len_not_none_sets = len([question_set for question_set in question_sets if question_set is not None])
+			for i, question_set in enumerate(question_sets):
+				if not question_set:
+					continue
+				if not question_list or len(question_list)==0:
+					if N//len_not_none_sets+1 <= len(question_set):
+						question_list = random.sample(question_set, N//len_not_none_sets+1)
+					else:
+						question_list = random.sample(question_set, len(question_set))
+				else:
+					if N//len_not_none_sets+1 <= len(question_set):
+						question_list.extend(random.sample(question_set, N//len_not_none_sets+1))
+					else:
+						question_list.extend(random.sample(question_set, len(question_set)))
+			while len(question_list) < N:
+				question_list.extend(random.choices(list(question_sets[3]), k = N - len(question_list)))
 
-	random.shuffle(question_list)
-	for i in range(N):
-		print(question_list[i])
+			random.shuffle(question_list)
+			for i in range(N):
+				print(question_list[i])
 
-			# print(s, a)
+			print(s, a)
 
 #/usr/bin/env python3 -W ignore::DeprecationWarning
