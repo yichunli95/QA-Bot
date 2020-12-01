@@ -8,6 +8,8 @@ from ans_engine import ans
 if __name__ == "__main__":
     input_file = sys.argv[1]
     question_file = sys.argv[2]
+    # input_file = "/Users/yichunli/Desktop/agares-nlp/Development_data/set5/a10.txt"
+    # question_file = "/Users/yichunli/Desktop/agares-nlp/s5a10Q.txt"
     ans.answer(input_file, question_file)
 
 

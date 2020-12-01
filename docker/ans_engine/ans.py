@@ -37,10 +37,10 @@ def answer(input_file, question_file):
     # path relative to the answer program (not sure why tho)
     # large model (need Gb+ memory during runtime)
     wh_tokenizer = AutoTokenizer.from_pretrained("./ans_engine/wh_model")
-    wh_model = AutoModelForQuestionAnswering.from_pretrained("./ans_engine/wh_model")
+    wh_model = AutoModelForQuestionAnswering.from_pretrained("./ans_engine/wh_model").to(device)
 
     boolean_tokenizer = AutoTokenizer.from_pretrained("./ans_engine/boolean_model")
-    boolean_model = AutoModelForSequenceClassification.from_pretrained("./ans_engine/boolean_model")
+    boolean_model = AutoModelForSequenceClassification.from_pretrained("./ans_engine/boolean_model").to(device)
 
     sentence_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
@@ -94,7 +94,9 @@ def answer(input_file, question_file):
 
         if is_binary_question(question):
             sequence = boolean_tokenizer.encode_plus(question, context, return_tensors="pt")['input_ids'].to(device)
-            logits = boolean_model(sequence)[0]
+            #logits = boolean_model(sequence)[0]
+            #print(boolean_model(sequence))
+            logits = boolean_model(sequence).logits
             probabilities = torch.softmax(logits, dim=1).detach().cpu().tolist()[0]
             proba_yes = round(probabilities[1], 2)
             proba_no = round(probabilities[0], 2)
@@ -107,7 +109,11 @@ def answer(input_file, question_file):
             inputs = wh_tokenizer.encode_plus(question, context, return_tensors="pt").to(device)
             for k in inputs:
                 inputs[k] = torch.unsqueeze(inputs[k][0][:512],0)
-            answer_start_scores, answer_end_scores = wh_model(**inputs)
+            #answer_start_scores, answer_end_scores = wh_model(**inputs)
+            output = wh_model(**inputs)
+            answer_start_scores, answer_end_scores = output.start_logits, output.end_logits
+            #print(wh_model(**inputs))
+            #print(answer_start_scores)
             answer_starts = torch.argsort(answer_start_scores, descending=True)[0][0:5]
             answer_ends = torch.argsort(answer_end_scores, descending=True)[0][0:5]
 

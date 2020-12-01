@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -W ignore::DeprecationWarning
+#!/usr/bin/python3 -W ignore
 # -*- coding:utf8 -*-
 
 # Copyright (c) 2017-present, Facebook, Inc.

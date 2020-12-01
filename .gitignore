@@ -19,3 +19,4 @@ docker/encoder/
 docker/GloVe/
 Development_data/
 noun_counting_data/
+tests/
