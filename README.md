@@ -1,7 +1,3 @@
 # agares-nlp
-Check the latest QA code here: https://colab.research.google.com/drive/1fgTBqYwHAtSsE5bzQXzVgK7BrDbsAJVw?usp=sharing
-
-QA todo:
-  - Sentence reranker
-  - InferSent + BM25
-  - Preprocess file to remove redundant information including titles, references...
+QA To-do:
+Fix the boolean question detection in QA in certain cases

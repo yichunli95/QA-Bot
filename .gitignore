@@ -21,3 +21,4 @@ Development_data/
 noun_counting_data/
 tests/
 local_test.txt
+.DS_Store
