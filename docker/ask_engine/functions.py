@@ -376,7 +376,7 @@ def generate_questions(document_path):
 
             if object != " ":
                 if verb._.inflect('VBN'):
-                    q = "Is it true that " + object_formatted + ("" if question_tense_passive == "" else " " + question_tense_passive) + " " + verb._.inflect('VBN').lower() + ("" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
+                    q = "Isn't it true that " + object_formatted + ("" if question_tense_passive == "" else " " + question_tense_passive) + " " + verb._.inflect('VBN').lower() + ("" if subject_formatted == " " else " by " + subject_formatted) + modifier_sent + "?"
                     if len(q) >= question_length_limit:
                         if debug_printing:
                             print(q)
@@ -389,8 +389,9 @@ def generate_questions(document_path):
                             print(q)
                         question_set_TF_passive.add(q)
 
-
-    return question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF, question_set_TF_IS_IT_TRUE, question_set_TF_passive, question_set_TF_passive_IS_IT_TRUE
+    question_set_TF_true = question_set_TF.union(question_set_TF_IS_IT_TRUE)
+    question_set_TF_false = question_set_TF_passive.union(question_set_TF_passive_IS_IT_TRUE)
+    return question_set_why, question_set_when, question_set_where, question_set_what, question_set_who, question_set_TF_true, question_set_TF_false
 
 
 if __name__ == '__main__':
