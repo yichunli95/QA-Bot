@@ -132,12 +132,6 @@ def answer(input_file, question_file):
                 print(final)
 
 
-
-
-
-
-
-# funcs for determining whether a question is boolean or not
 def find_root(sent, return_idx = True):
     for idx,word in enumerate(sent):
         if word.head == word:
@@ -148,27 +142,10 @@ def find_root(sent, return_idx = True):
 
 def is_binary_question(question):
     wh = {'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'whose'}
-    tf = {'is','are','do','does','was','were','did','have','has','would','will', 'whether','should','must', 'can', 'could', 'would', 'shall'}
-    # Segment question sentence into clause(s)
+    tf = {'is','are','do','does','was','were','did','have','has','had', 'would','will', 'whether','shall', 'should','must','may','might'}
     nlp = spacy.load("en_core_web_sm")
     sent = nlp(question)
-    
     # displacy.render(sent, style='dep', jupyter=True, options={'distance': 90})
-    if ',' in sent.text:
-        root, root_idx = find_root(sent)
-        # print('root:',root, root_idx)
-        l = max(root_idx - 1, 0)
-        r = min(root_idx + 1, len(sent))
-        while l > 0:
-            if sent[l].text == ',':
-                l += 1
-                break
-            l -= 1
-        while r < len(sent):
-            if sent[r].text == ',':
-                break
-            r += 1
-        sent = list(sent.__iter__())[l:r]
     
     ct = 1
     wh_idx = None
@@ -176,16 +153,44 @@ def is_binary_question(question):
     for word in sent:
         if word.text.lower() in wh and not wh_idx:
             wh_idx = ct
-        if ((word.text.lower() in tf) or word.dep_ == 'aux') and not tf_idx:
+        if ((word.text.lower() in tf)) and not tf_idx:
+            #print(word)
             tf_idx = ct
         ct += 1
 
     if tf_idx and not wh_idx:
         return True
-    if not tf_idx and wh_idx:
+    elif not tf_idx and wh_idx:
         return False
-    if tf_idx and wh_idx:
-        if tf_idx < wh_idx:
-            return True
+    elif tf_idx and wh_idx:
+        if ',' in sent.text:
+            root, root_idx = find_root(sent)
+            #print('root:',root, root_idx)
+            l = max(root_idx - 1, 0)
+            r = min(root_idx + 1, len(sent))
+            # print(l,r)
+            while l > 0:
+                if sent[l].text == ',':
+                    l += 1
+                    break
+                l -= 1
+            while r < len(sent):
+                if sent[r].text == ',':
+                    break
+                r += 1
+            sent = list(sent.__iter__())[l:r]
+            if tf_idx < r and tf_idx >= l: # tf key word in the main clause
+                return True
+            else:
+                return False
         else:
-            return False
+            if tf_idx < wh_idx:
+                return True
+            else:
+                return False
+    else:
+        return False
+
+
+
+
