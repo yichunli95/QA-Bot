@@ -63,14 +63,14 @@ for (( j = 1; j <= 10; j++ ))
         sudo docker exec -it $NAME ./ask /host/Users/noun_counting_data/a"$j".txt 5 | tee tests/ncda"$j".txt
         end_time=$(date +%s)
         dur=$(expr $end_time - $start_time)
-        echo "execution time was ${dur} s."
+        echo "Execution time was ${dur}s."
         echo '---------'
         echo '****************'
         start_time=$(date +%s)
         sudo docker exec -it $NAME ./answer /host/Users/noun_counting_data/a"$j".txt /host/Users/tests/ncda"$j".txt
         end_time=$(date +%s)
         dur=$(expr $end_time - $start_time)
-        echo "execution time was ${dur} s."
+        echo "Execution time was ${dur}s."
         echo '---------'
         echo '****************'    
     done
