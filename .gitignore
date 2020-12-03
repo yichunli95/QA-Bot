@@ -22,6 +22,5 @@ noun_counting_data/
 tests/
 local_test.txt
 .DS_Store
-aws_test.txt
-test_aws2.txt
-aws_test3.txt
+Archive.zip
+outputs/

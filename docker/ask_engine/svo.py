@@ -1,5 +1,6 @@
 #!/usr/bin/python3 -W ignore
 # -*- coding:utf8 -*-
+#https://github.com/klintan/py-nltk-svo
 import spacy
 from collections.abc import Iterable
 

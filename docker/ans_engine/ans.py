@@ -139,14 +139,16 @@ def find_root(sent, return_idx = True):
                 return word, idx
             else:
                 return word
-
 def is_binary_question(question):
     wh = {'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'whose'}
     tf = {'is','are','do','does','was','were','did','have','has','had', 'would','will', 'whether','shall', 'should','must','may','might'}
+    mod = {'acl','advcl','prep','relcl'}
     nlp = spacy.load("en_core_web_sm")
     sent = nlp(question)
     # displacy.render(sent, style='dep', jupyter=True, options={'distance': 90})
-    
+    if sent[-1].text.lower() in wh or sent[0].text.lower() in wh:
+        return False
+
     ct = 1
     wh_idx = None
     tf_idx = None
@@ -165,22 +167,54 @@ def is_binary_question(question):
     elif tf_idx and wh_idx:
         if ',' in sent.text:
             root, root_idx = find_root(sent)
-            #print('root:',root, root_idx)
-            l = max(root_idx - 1, 0)
-            r = min(root_idx + 1, len(sent))
-            # print(l,r)
-            while l > 0:
-                if sent[l].text == ',':
-                    l += 1
+            # print('root:',root, root_idx)
+            l = max(root_idx, 0)
+            r = min(root_idx, len(sent)-1)
+          
+            for lc in reversed(list(root.lefts)):
+                if lc.dep_ in mod:
                     break
-                l -= 1
-            while r < len(sent):
-                if sent[r].text == ',':
+                else:
+                    l = lc.i
+            for rc in root.rights:
+                if rc.dep_ in mod:
                     break
-                r += 1
+                else:
+                    r = rc.i
+            
+            # for lc in range(root_idx, -1, -1):
+            #     if any(sent[lc].dep_ in mod:
+            #         continue
+            #     else:
+            #         l = lc
+            # for rc in range(root_idx, len(sent)):
+            #     if sent[rc].dep_ in mod:
+            #         continue
+            #     else:
+            #         r = rc
+            # # print('left:',l, 'right:', r)
             sent = list(sent.__iter__())[l:r]
-            if tf_idx < r and tf_idx >= l: # tf key word in the main clause
+            #print(sent)
+
+            ct = 1
+            wh_idx = None
+            tf_idx = None
+            for word in sent:
+                if word.text.lower() in wh and not wh_idx:
+                    wh_idx = ct
+                if ((word.text.lower() in tf)) and not tf_idx:
+                    #print(word)
+                    tf_idx = ct
+                ct += 1
+            if tf_idx and not wh_idx:
                 return True
+            elif not tf_idx and wh_idx:
+                return False
+            elif tf_idx and wh_idx:
+                if tf_idx < wh_idx:
+                    return True
+                else:
+                    return False
             else:
                 return False
         else:
@@ -191,6 +225,7 @@ def is_binary_question(question):
     else:
         return False
 
-
-
-
+if __name__ == '__main__':
+    input_file = "~/Desktop/agares-nlp/data/set4/a5.txt"
+    question_file = "~/Desktop/agares-nlp/test_questions.txt"
+    answer(input_file, question_file)
